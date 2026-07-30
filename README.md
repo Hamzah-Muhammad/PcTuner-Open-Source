@@ -123,4 +123,4 @@ Packaging spec: `python/PcTuner-Open-Source.spec`. Full architecture/design rati
 
 ## Disclaimer
 
-Personal tooling, provided as-is, not affiliated with Microsoft. The aggressive tiers deliberately trade security hardening for performance — read each tool's `CHANGES.md` and understand an item before leaving it checked.
+Personal tooling, provided as-is, not affiliated with Microsoft. **Use at your own risk — the author is not responsible for any damage to your PC, data loss, or other issues arising from use of this software.** Every change is designed to be reversible (undo logging + a System Restore Point before every apply run — see [Shared principles](#shared-principles-every-tool-in-the-suite)), but no guarantee is made that undo will succeed in every situation. The aggressive tiers deliberately trade security hardening for performance — read each tool's `CHANGES.md` and understand an item before leaving it checked.
