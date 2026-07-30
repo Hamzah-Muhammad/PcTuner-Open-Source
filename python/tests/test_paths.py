@@ -23,7 +23,7 @@ def test_dev_mode_repo_root_is_two_parents_up_from_this_file():
 
 
 def test_frozen_mode_repo_root_is_next_to_the_exe(monkeypatch, tmp_path):
-    fake_exe = tmp_path / "PrimePCTuner.exe"
+    fake_exe = tmp_path / "PcTuner-Open-Source.exe"
     fake_exe.touch()
     monkeypatch.setattr(sys, "frozen", True, raising=False)
     monkeypatch.setattr(sys, "executable", str(fake_exe))

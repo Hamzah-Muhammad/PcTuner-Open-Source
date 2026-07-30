@@ -76,7 +76,7 @@ export function HubView({
         </>
       )}
 
-      <Footer note={version ? `PrimePCTuner hub v${version}` : "PrimePCTuner hub"} />
+      <Footer note={version ? `PcTuner-Open-Source hub v${version}` : "PcTuner-Open-Source hub"} />
     </div>
   );
 }

@@ -1,4 +1,4 @@
-# PrimePCTuner
+# PcTuner-Open-Source
 
 A Windows 11 PC-optimization suite: audit first, checkbox consent for every single change, undo logging, and hard guardrails — derived from a real, verified optimization pass on a Ryzen 7 5800X3D + RTX 4070 Ti rig that took Warzone from ~100 to ~200 FPS.
 
@@ -7,12 +7,12 @@ A Windows 11 PC-optimization suite: audit first, checkbox consent for every sing
 A pywebview desktop app (FastAPI backend + React frontend, `python/`) is the suite's front door. Press "Scan PC" on the hub to detect your specs, then launch whichever tool fits the machine. Every tool opens as the same branded checklist — nothing scans automatically, press Scan to check current state vs. target for every item (green ✓ APPLIED for what's already done), then Apply fires only after a confirmation modal (creates a System Restore Point first, logs everything for undo) and Undo reverts the most recent apply run.
 
 ```powershell
-python\dist\PrimePCTuner.exe        # packaged build (needs shared\/changes\/FPSOptimization\/StartupOptimization\ as sibling folders)
+python\dist\PcTuner-Open-Source.exe        # packaged build (needs shared\/changes\/FPSOptimization\/StartupOptimization\ as sibling folders)
 # or, for development:
 cd python && .venv\Scripts\python.exe app.py
 ```
 
-Packaging spec: `python/PrimePCTuner.spec` (PyInstaller onefile). Full architecture: `docs/PYTHON_REWRITE_DESIGN.md`.
+Packaging spec: `python/PcTuner-Open-Source.spec` (PyInstaller onefile). Full architecture: `docs/PYTHON_REWRITE_DESIGN.md`.
 
 ## The tools
 
@@ -35,7 +35,7 @@ More tools may join the suite (candidates: NetworkOptimization for latency tunin
 ## Repo layout
 
 ```
-PrimePCTuner/
+PcTuner-Open-Source/
 ├── README.md                  ← you are here
 ├── docs/
 │   └── PYTHON_REWRITE_DESIGN.md  ← full architecture/design doc for the Python/React app
@@ -65,7 +65,7 @@ PrimePCTuner/
     ├── app.py                  ← desktop entry point (elevation, server, window)
     ├── backend/                ← routes, subprocess bridge to changes\*.ps1, models, reports
     ├── frontend/                ← React SPA (Vite), built to frontend\dist\
-    └── PrimePCTuner.spec        ← PyInstaller onefile packaging spec
+    └── PcTuner-Open-Source.spec        ← PyInstaller onefile packaging spec
 ```
 
 Each catalog item is its own standalone PowerShell script under `changes\`, invoked per-item as a subprocess from the Python backend (via `shared\PrimeHeadless.ps1`'s mode contract) rather than run in-process — isolation over convenience, so one broken/tampered item can only poison its own result. A tool = its `manifest.json` + the shared FastAPI/React app wiring.
