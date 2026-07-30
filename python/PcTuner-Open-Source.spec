@@ -7,7 +7,7 @@ next to the exe in the release zip, since subprocess needs actual files on
 disk to hand pwsh/powershell, not PyInstaller's extracted-per-run temp dir.
 
 Run from python/: `pyinstaller build.spec --noconfirm`
-Output: python/dist/PrimePCTuner.exe (bare — won't run standalone until the
+Output: python/dist/PcTuner-Open-Source.exe (bare — won't run standalone until the
 sibling .ps1 folders are copied alongside it, same caveat the ps2exe build
 already carries).
 """
@@ -42,11 +42,11 @@ VERSION_INFO_PATH.write_text(
     "          '040904B0',\n"
     "          [\n"
     "            StringStruct('CompanyName', 'Hamzah Muhammad (@Humzeeny)'),\n"
-    "            StringStruct('FileDescription', 'PrimePCTuner — Windows optimization suite'),\n"
+    "            StringStruct('FileDescription', 'PcTuner-Open-Source — Windows optimization suite'),\n"
     f"            StringStruct('FileVersion', {VERSION!r}),\n"
-    "            StringStruct('InternalName', 'PrimePCTuner'),\n"
-    "            StringStruct('OriginalFilename', 'PrimePCTuner.exe'),\n"
-    "            StringStruct('ProductName', 'PrimePCTuner'),\n"
+    "            StringStruct('InternalName', 'PcTuner-Open-Source'),\n"
+    "            StringStruct('OriginalFilename', 'PcTuner-Open-Source.exe'),\n"
+    "            StringStruct('ProductName', 'PcTuner-Open-Source'),\n"
     f"            StringStruct('ProductVersion', {VERSION!r}),\n"
     "          ],\n"
     "        )\n"
@@ -90,7 +90,7 @@ exe = EXE(  # noqa: F821
     a.binaries,
     a.datas,
     [],
-    name="PrimePCTuner",
+    name="PcTuner-Open-Source",
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
