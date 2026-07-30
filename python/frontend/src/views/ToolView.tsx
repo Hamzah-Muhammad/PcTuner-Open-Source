@@ -292,7 +292,8 @@ export function ToolView({ tool, specs, onBack }: ToolViewProps) {
           message={
             `About to apply ${eligibleIds.length} change${eligibleIds.length === 1 ? "" : "s"} ` +
             "to this PC — a System Restore Point will be created first, and every change is " +
-            "logged so it can be undone afterward."
+            "logged so it can be undone afterward. Use at your own risk: the author isn't " +
+            "responsible for any damage to your PC or data loss from applying these changes."
           }
           callout={
             eligibleLevel3Count > 0
