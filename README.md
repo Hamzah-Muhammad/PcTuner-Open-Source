@@ -3,8 +3,15 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Platform: Windows 11](https://img.shields.io/badge/platform-Windows%2011-0078D6.svg)](#requirements)
 [![Latest release](https://img.shields.io/github/v/release/Hamzah-Muhammad/PcTuner-Open-Source)](https://github.com/Hamzah-Muhammad/PcTuner-Open-Source/releases/latest)
+[![Python](https://img.shields.io/badge/Python-3.13-3776AB.svg?logo=python&logoColor=white)](python/pyproject.toml)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.136-009688.svg?logo=fastapi&logoColor=white)](python/requirements.txt)
+[![React](https://img.shields.io/badge/React-18-61DAFB.svg?logo=react&logoColor=white)](python/frontend)
+[![TypeScript](https://img.shields.io/badge/TypeScript-Vite-3178C6.svg?logo=typescript&logoColor=white)](python/frontend)
+[![PowerShell](https://img.shields.io/badge/PowerShell-5.1%2B-5391FE.svg?logo=powershell&logoColor=white)](shared)
 
-A Windows 11 PC-optimization suite: audit first, checkbox consent for every single change, undo logging, and hard guardrails — derived from a real, verified optimization pass on a Ryzen 7 5800X3D + RTX 4070 Ti rig that took Warzone from ~100 to ~200 FPS.
+A complete, shipped Windows 11 PC-optimization suite: audit first, checkbox consent for every single change, undo logging, and hard guardrails — derived from a real, verified optimization pass on a Ryzen 7 5800X3D + RTX 4070 Ti rig that took Warzone from ~100 to ~200 FPS. Used to increase PC speed and performance in both gaming and workstation PCs.
+
+**Stack:** Python (FastAPI) backend, React + TypeScript (Vite) frontend, packaged as a native Windows desktop app via pywebview + PyInstaller, with a PowerShell engine underneath for every system-level check/change. Two tagged releases shipped (`v1.0.0` PowerShell-only hub, `v2.0.0` full Python/React rewrite) — this is a working, end-to-end application, not a prototype.
 
 ## Table of contents
 
