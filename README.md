@@ -1,18 +1,42 @@
 # PcTuner-Open-Source
 
-A Windows 11 PC-optimization suite: audit first, checkbox consent for every single change, undo logging, and hard guardrails — derived from a real, verified optimization pass on a Ryzen 7 5800X3D + RTX 4070 Ti rig that took Warzone from ~100 to ~200 FPS.
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Platform: Windows 11](https://img.shields.io/badge/platform-Windows%2011-0078D6.svg)](#requirements)
+[![Latest release](https://img.shields.io/github/v/release/Hamzah-Muhammad/PcTuner-Open-Source)](https://github.com/Hamzah-Muhammad/PcTuner-Open-Source/releases/latest)
+[![Python](https://img.shields.io/badge/Python-3.13-3776AB.svg?logo=python&logoColor=white)](python/pyproject.toml)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.136-009688.svg?logo=fastapi&logoColor=white)](python/requirements.txt)
+[![React](https://img.shields.io/badge/React-18-61DAFB.svg?logo=react&logoColor=white)](python/frontend)
+[![TypeScript](https://img.shields.io/badge/TypeScript-Vite-3178C6.svg?logo=typescript&logoColor=white)](python/frontend)
+[![PowerShell](https://img.shields.io/badge/PowerShell-5.1%2B-5391FE.svg?logo=powershell&logoColor=white)](shared)
+
+A complete, shipped Windows 11 PC-optimization suite: audit first, checkbox consent for every single change, undo logging, and hard guardrails — derived from a real, verified optimization pass on a Ryzen 7 5800X3D + RTX 4070 Ti rig that took Warzone from ~100 to ~200 FPS. Used to increase PC speed and performance in both gaming and workstation PCs.
+
+**Stack:** Python (FastAPI) backend, React + TypeScript (Vite) frontend, packaged as a native Windows desktop app via pywebview + PyInstaller, with a PowerShell engine underneath for every system-level check/change. Two tagged releases shipped (`v1.0.0` PowerShell-only hub, `v2.0.0` full Python/React rewrite) — this is a working, end-to-end application, not a prototype.
+
+## Table of contents
+
+- [Download](#download)
+- [Start here: the app](#start-here-the-app)
+- [The tools](#the-tools)
+- [Shared principles](#shared-principles-every-tool-in-the-suite)
+- [Repo layout](#repo-layout)
+- [Requirements](#requirements)
+- [Building from source](#building-from-source)
+- [License](#license)
+- [Disclaimer](#disclaimer)
+
+## Download
+
+Grab the latest release from the **[Releases page](https://github.com/Hamzah-Muhammad/PcTuner-Open-Source/releases/latest)**:
+
+- **`*-win.zip`** — recommended. Unzip anywhere; the `.exe` sits at the top of the extracted folder alongside the sibling folders it needs (`shared/`, `changes/`, `FPSOptimization/`, `StartupOptimization/`). Double-click to run.
+- **Bare `.exe`** — only useful if you already have the sibling folders in place (e.g. you cloned the repo). Won't run standalone on its own.
+
+The app self-elevates (UAC prompt) on launch — it needs Administrator rights to read/change the registry, services, and scheduled tasks it audits.
 
 ## Start here: the app
 
 A pywebview desktop app (FastAPI backend + React frontend, `python/`) is the suite's front door. Press "Scan PC" on the hub to detect your specs, then launch whichever tool fits the machine. Every tool opens as the same branded checklist — nothing scans automatically, press Scan to check current state vs. target for every item (green ✓ APPLIED for what's already done), then Apply fires only after a confirmation modal (creates a System Restore Point first, logs everything for undo) and Undo reverts the most recent apply run.
-
-```powershell
-python\dist\PcTuner-Open-Source.exe        # packaged build (needs shared\/changes\/FPSOptimization\/StartupOptimization\ as sibling folders)
-# or, for development:
-cd python && .venv\Scripts\python.exe app.py
-```
-
-Packaging spec: `python/PcTuner-Open-Source.spec` (PyInstaller onefile). Full architecture: `docs/PYTHON_REWRITE_DESIGN.md`.
 
 ## The tools
 
@@ -37,6 +61,7 @@ More tools may join the suite (candidates: NetworkOptimization for latency tunin
 ```
 PcTuner-Open-Source/
 ├── README.md                  ← you are here
+├── LICENSE                    ← MIT
 ├── docs/
 │   └── PYTHON_REWRITE_DESIGN.md  ← full architecture/design doc for the Python/React app
 ├── shared/
@@ -72,8 +97,37 @@ Each catalog item is its own standalone PowerShell script under `changes\`, invo
 
 ## Requirements
 
-Windows 11, WebView2 (preinstalled on Win11), PowerShell 5.1+ (7+ recommended), Administrator elevation (the app self-elevates), and a willingness to reboot for some changes. Building from source additionally needs Python 3.13 + Node/npm (build-time only — the packaged exe never runs Node).
+Windows 11, WebView2 (preinstalled on Win11), PowerShell 5.1+ (7+ recommended), Administrator elevation (the app self-elevates), and a willingness to reboot for some changes.
 
-## License / disclaimer
+## Building from source
 
-Personal tooling, provided as-is. The aggressive tiers deliberately trade security hardening for performance — read each tool's CHANGES.md and understand an item before leaving it checked. Not affiliated with Microsoft.
+```powershell
+git clone https://github.com/Hamzah-Muhammad/PcTuner-Open-Source.git
+cd PcTuner-Open-Source\python
+
+# Backend
+python -m venv .venv
+.venv\Scripts\pip install -r requirements.txt
+
+# Frontend (build-time only — the packaged exe never runs Node)
+cd frontend
+npm install
+npm run build
+cd ..
+
+# Run in dev mode
+.venv\Scripts\python.exe app.py
+
+# Or package a standalone exe (PyInstaller onefile)
+.venv\Scripts\pyinstaller PcTuner-Open-Source.spec --noconfirm
+```
+
+Packaging spec: `python/PcTuner-Open-Source.spec`. Full architecture/design rationale: `docs/PYTHON_REWRITE_DESIGN.md`.
+
+## License
+
+[MIT](LICENSE) — use, modify, and redistribute freely, including commercially, as long as the copyright notice is kept.
+
+## Disclaimer
+
+Personal tooling, provided as-is, not affiliated with Microsoft. **Use at your own risk — the author is not responsible for any damage to your PC, data loss, or other issues arising from use of this software.** Every change is designed to be reversible (undo logging + a System Restore Point before every apply run — see [Shared principles](#shared-principles-every-tool-in-the-suite)), but no guarantee is made that undo will succeed in every situation. The aggressive tiers deliberately trade security hardening for performance — read each tool's `CHANGES.md` and understand an item before leaving it checked.
