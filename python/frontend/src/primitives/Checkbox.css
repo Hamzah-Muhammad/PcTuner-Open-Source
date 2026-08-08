@@ -7,17 +7,29 @@
   cursor: pointer;
 }
 
+/* The real input is transparent but must stay the topmost hit target — it sits
+ * earlier in the DOM than the decorative .box, so without an explicit z-index
+ * the later-painted .box would swallow every click (both are position:absolute
+ * with z-index:auto, so DOM order decides). Its own :focus-visible outline is
+ * invisible at opacity:0, so the ring is drawn on .box instead (see below). */
 .input {
   position: absolute;
   inset: 0;
+  z-index: 1;
   margin: 0;
   opacity: 0;
   cursor: pointer;
 }
 
+.input:focus-visible {
+  outline: none;
+}
+
 .box {
   position: absolute;
   inset: 0;
+  /* Pure decoration — never a click target, or it would cover the input. */
+  pointer-events: none;
   border-radius: 6px;
   background: var(--surface);
   border: 1.5px solid var(--border);
@@ -43,6 +55,13 @@
 
 .input:hover ~ .box {
   border-color: var(--green-hi);
+}
+
+/* Keyboard focus ring, drawn on the visible box since the input itself is
+ * transparent. Matches theme.css's global :focus-visible treatment. */
+.input:focus-visible ~ .box {
+  outline: 2px solid var(--green);
+  outline-offset: 2px;
 }
 
 .input:checked ~ .box {
