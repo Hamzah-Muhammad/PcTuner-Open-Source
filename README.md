@@ -11,7 +11,7 @@
 
 A complete, shipped Windows 11 PC-optimization suite: audit first, checkbox consent for every single change, undo logging, and hard guardrails — derived from a real, verified optimization pass on a Ryzen 7 5800X3D + RTX 4070 Ti rig that took Warzone from ~100 to ~200 FPS. Used to increase PC speed and performance in both gaming and workstation PCs.
 
-**Stack:** Python (FastAPI) backend, React + TypeScript (Vite) frontend, packaged as a native Windows desktop app via pywebview + PyInstaller, with a PowerShell engine underneath for every system-level check/change. Two tagged releases shipped (`v1.0.0` PowerShell-only hub, `v2.0.0` full Python/React rewrite) — this is a working, end-to-end application, not a prototype.
+**Stack:** Python (FastAPI) backend, React + TypeScript (Vite) frontend, packaged as a native Windows desktop app via pywebview + PyInstaller, with a PowerShell engine underneath for every system-level check/change — this is a working, end-to-end application, not a prototype.
 
 ## Table of contents
 
