@@ -1,4 +1,4 @@
-# 1.10 — Block Edge background mode (policy). Windows Changes sector.
+﻿# 1.10 — Block Edge background mode (policy). Windows Changes sector.
 # Also covers the other half of what was Startup Optimizer's W.5 (see 1.9).
 param([switch]$Check, [switch]$Apply, [switch]$Undo, [string]$PreviousValueJson)
 $ScriptDir = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent ([Diagnostics.Process]::GetCurrentProcess().MainModule.FileName) }

@@ -1,4 +1,4 @@
-# 2B.4 — System Restore shadow storage capped at 10 GB. Performance & Hardware sector.
+﻿# 2B.4 — System Restore shadow storage capped at 10 GB. Performance & Hardware sector.
 # Bounds background VSS disk usage while keeping restore points. Requires
 # elevation to read/write.
 param([switch]$Check, [switch]$Apply, [switch]$Undo, [string]$PreviousValueJson)

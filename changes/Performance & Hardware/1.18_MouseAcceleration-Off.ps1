@@ -1,4 +1,4 @@
-# 1.18 — Mouse acceleration off. Performance & Hardware sector.
+﻿# 1.18 — Mouse acceleration off. Performance & Hardware sector.
 # Raw 1:1 aim — Enhance Pointer Precision disabled.
 param([switch]$Check, [switch]$Apply, [switch]$Undo, [string]$PreviousValueJson)
 $ScriptDir = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent ([Diagnostics.Process]::GetCurrentProcess().MainModule.FileName) }

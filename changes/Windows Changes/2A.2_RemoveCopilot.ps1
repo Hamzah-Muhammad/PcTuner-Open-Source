@@ -1,4 +1,4 @@
-# 2A.2 — Remove Copilot. Windows Changes sector.
+﻿# 2A.2 — Remove Copilot. Windows Changes sector.
 # Also covers what was Startup Optimizer's W.3 — merged, identical package match.
 param([switch]$Check, [switch]$Apply, [switch]$Undo, [string]$PreviousValueJson)
 $ScriptDir = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent ([Diagnostics.Process]::GetCurrentProcess().MainModule.FileName) }

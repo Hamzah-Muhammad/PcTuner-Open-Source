@@ -1,6 +1,6 @@
 import type { CatalogItem, ScanResult } from "../api";
 import { ChecklistRow } from "./ChecklistRow";
-import "./LevelGroup.css";
+import styles from "./LevelGroup.module.css";
 
 interface LevelGroupProps {
   levelTitle: string;
@@ -26,11 +26,11 @@ export function LevelGroup({
 }: LevelGroupProps) {
   return (
     <div>
-      <div className="header">
-        <span className="levelTitle" style={{ color: levelColor }}>
+      <div className={styles.header}>
+        <span className={styles.levelTitle} style={{ color: levelColor }}>
           {levelTitle}
         </span>
-        <span className="moduleLabel">
+        <span className={styles.moduleLabel}>
           {module.toUpperCase()} · {items.length} ITEMS
         </span>
       </div>

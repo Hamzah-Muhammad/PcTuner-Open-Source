@@ -1,7 +1,7 @@
 import type { MouseEvent, ReactNode } from "react";
 import { Button } from "./Button";
 import { Card } from "./Card";
-import "./ConfirmModal.css";
+import styles from "./ConfirmModal.module.css";
 
 interface ConfirmModalProps {
   title: string;
@@ -29,15 +29,15 @@ export function ConfirmModal({
   onCancel,
 }: ConfirmModalProps) {
   return (
-    <div className="modalOverlay" onClick={onCancel}>
+    <div className={styles.modalOverlay} onClick={onCancel}>
       <Card
-        className="modalCard"
+        className={styles.modalCard}
         onClick={(e: MouseEvent) => e.stopPropagation()}
       >
-        <h3 className="modalTitle">{title}</h3>
-        <div className="modalMessage">{message}</div>
-        {callout && <div className="modalCallout">{callout}</div>}
-        <div className="modalActions">
+        <h3 className={styles.modalTitle}>{title}</h3>
+        <div className={styles.modalMessage}>{message}</div>
+        {callout && <div className={styles.modalCallout}>{callout}</div>}
+        <div className={styles.modalActions}>
           <Button onClick={onCancel} disabled={busy}>
             Cancel
           </Button>

@@ -1,4 +1,4 @@
-# 2S.6 — RemoteRegistry -> Disabled. Services sector.
+﻿# 2S.6 — RemoteRegistry -> Disabled. Services sector.
 # Remote registry editing — disabling is a security win too.
 param([switch]$Check, [switch]$Apply, [switch]$Undo, [string]$PreviousValueJson)
 $ScriptDir = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent ([Diagnostics.Process]::GetCurrentProcess().MainModule.FileName) }

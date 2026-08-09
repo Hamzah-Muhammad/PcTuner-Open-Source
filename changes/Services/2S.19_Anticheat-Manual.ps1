@@ -1,4 +1,4 @@
-# 2S.19 — Anticheat/launcher services -> Manual (never Disabled). Services sector.
+﻿# 2S.19 — Anticheat/launcher services -> Manual (never Disabled). Services sector.
 # HARD GUARDRAIL: EABackgroundService, EAAntiCheatService, BEService,
 # EasyAntiCheat: Disabled silently breaks game launches (verified with EA
 # titles); Manual keeps them dormant until their game runs. This script's
@@ -23,17 +23,30 @@ Invoke-PrimeChange -Id '2S.19' -Check:$Check -Apply:$Apply -Undo:$Undo -Previous
     -ApplyBlock {
         $found = @(Get-CimInstance Win32_Service -ErrorAction SilentlyContinue | Where-Object { $Names -contains $_.Name })
         if (-not $found.Count) { return New-TrackedResult -Success $true -Note 'none present — nothing to do' }
-        $results = @{}
-        foreach ($svc in $found.Name) { $results[$svc] = Set-ServiceStartModeTracked $svc $Expected }
-        New-TrackedResult -Success $true -PreviouslyExisted $true -PreviousValue ($results | ConvertTo-Json -Compress -Depth 4)
+        # A per-service try/catch, not a bare loop: one service throwing
+        # (e.g. Access Denied) must not discard the Manual/undo data already
+        # captured for services set earlier in this same loop.
+        $results = @{}; $failures = [System.Collections.Generic.List[string]]::new()
+        foreach ($svc in $found.Name) {
+            try { $results[$svc] = Set-ServiceStartModeTracked $svc $Expected }
+            catch { $failures.Add("$($svc): $($_.Exception.Message)") }
+        }
+        if (-not $results.Count) {
+            return New-TrackedResult -Success $false -Note ("all services failed: " + ($failures -join '; '))
+        }
+        $note = if ($failures.Count) { "partially applied — failed: " + ($failures -join '; ') } else { $null }
+        New-TrackedResult -Success $true -PreviouslyExisted $true -PreviousValue ($results | ConvertTo-Json -Compress -Depth 4) -Note $note
     } `
     -UndoBlock {
         param($Prev)
         if (-not $Prev.PreviouslyExisted) { return New-TrackedResult -Success $true -Note 'nothing was present at apply time' }
         $inner = $Prev.PreviousValue | ConvertFrom-Json
+        $failures = [System.Collections.Generic.List[string]]::new()
         foreach ($svc in $inner.PSObject.Properties.Name) {
             $r = $inner.$svc
-            Undo-ServiceStartModeTracked $svc $r.PreviouslyExisted $r.PreviousValue | Out-Null
+            try { Undo-ServiceStartModeTracked $svc $r.PreviouslyExisted $r.PreviousValue | Out-Null }
+            catch { $failures.Add("$($svc): $($_.Exception.Message)") }
         }
-        New-TrackedResult -Success $true
+        $note = if ($failures.Count) { "partially undone — failed: " + ($failures -join '; ') } else { $null }
+        New-TrackedResult -Success ($failures.Count -eq 0) -Note $note
     }

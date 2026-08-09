@@ -14,7 +14,7 @@ import { ConfirmModal } from "../primitives/ConfirmModal";
 import { ChecklistPanel, type LevelMeta } from "./ChecklistPanel";
 import { StatsPanel, type ScanCounts } from "./StatsPanel";
 import { ToolbarBar } from "./ToolbarBar";
-import "./ToolView.css";
+import styles from "./ToolView.module.css";
 import type { PCSpecs } from "../api";
 
 interface ToolConfig {
@@ -76,12 +76,21 @@ export function ToolView({ tool, specs, onBack }: ToolViewProps) {
   const [results, setResults] = useState<Map<string, ScanResult>>(new Map());
   const [counts, setCounts] = useState<ScanCounts | null>(null);
   const [reportAvailable, setReportAvailable] = useState(false);
-  const [statusText, setStatusText] = useState("Not scanned yet — press Scan to check");
+  const [statusText, setStatusText] = useState(
+    "Not scanned yet — press Scan to check",
+  );
   const [applying, setApplying] = useState(false);
   const [undoing, setUndoing] = useState(false);
   const [undoAvailable, setUndoAvailable] = useState(false);
   const [showApplyModal, setShowApplyModal] = useState(false);
   const [showUndoModal, setShowUndoModal] = useState(false);
+  // Per-item Apply/Undo failures, surfaced explicitly — without this, a
+  // partial failure (e.g. Access Denied on one service) was indistinguishable
+  // in the UI from the user simply not having checked that item, since the
+  // backend's per-item Error/Note was fetched and then never read.
+  const [itemErrors, setItemErrors] = useState<
+    { Id: string; message: string }[]
+  >([]);
 
   const runScan = useCallback(
     async (ids: string[]) => {
@@ -149,7 +158,9 @@ export function ToolView({ tool, specs, onBack }: ToolViewProps) {
       .then((items) => {
         if (cancelled) return;
         setCatalog(items);
-        const defaultChecked = new Set(items.filter((i) => i.DefaultChecked).map((i) => i.Id));
+        const defaultChecked = new Set(
+          items.filter((i) => i.DefaultChecked).map((i) => i.Id),
+        );
         setChecked(defaultChecked);
       })
       .catch((e) => {
@@ -186,19 +197,38 @@ export function ToolView({ tool, specs, onBack }: ToolViewProps) {
   // before firing. checked ids that aren't PENDING on the last scan (e.g.
   // already APPLIED, or never scanned) are silently excluded here too, same
   // rule the backend re-enforces.
-  const eligibleIds = [...checked].filter((id) => results.get(id)?.Status === "PENDING");
+  const eligibleIds = [...checked].filter(
+    (id) => results.get(id)?.Status === "PENDING",
+  );
   const eligibleLevel3Count =
-    catalog?.filter((i) => eligibleIds.includes(i.Id) && i.Level === 3).length ?? 0;
+    catalog?.filter((i) => eligibleIds.includes(i.Id) && i.Level === 3)
+      .length ?? 0;
 
   const describeError = (e: unknown) =>
-    e instanceof ApiError ? e.detail : e instanceof Error ? e.message : "unknown error";
+    e instanceof ApiError
+      ? e.detail
+      : e instanceof Error
+        ? e.message
+        : "unknown error";
 
   const confirmApply = async () => {
     setShowApplyModal(false);
     setApplying(true);
-    setStatusText(`Applying ${eligibleIds.length} change${eligibleIds.length === 1 ? "" : "s"}…`);
+    setItemErrors([]);
+    setStatusText(
+      `Applying ${eligibleIds.length} change${eligibleIds.length === 1 ? "" : "s"}…`,
+    );
     try {
-      await api.apply(tool, eligibleIds);
+      const results = await api.apply(tool, eligibleIds);
+      const failed = results.filter((r) => !r.Success);
+      if (failed.length) {
+        setItemErrors(
+          failed.map((r) => ({
+            Id: r.Id,
+            message: r.Error || r.Note || "failed",
+          })),
+        );
+      }
       // Re-scan rather than hand-reconcile apply results into `results` —
       // the scan is the actual source of truth for current system state,
       // and this reuses the exact same rendering path a manual re-scan does.
@@ -214,9 +244,19 @@ export function ToolView({ tool, specs, onBack }: ToolViewProps) {
   const confirmUndo = async () => {
     setShowUndoModal(false);
     setUndoing(true);
+    setItemErrors([]);
     setStatusText("Undoing last apply run…");
     try {
-      await api.undo(tool);
+      const results = await api.undo(tool);
+      const failed = results.filter((r) => !r.Success);
+      if (failed.length) {
+        setItemErrors(
+          failed.map((r) => ({
+            Id: r.Id,
+            message: r.Error || r.Note || "failed",
+          })),
+        );
+      }
       await runScan([...checked]);
       await refreshUndoAvailable();
     } catch (e) {
@@ -227,9 +267,9 @@ export function ToolView({ tool, specs, onBack }: ToolViewProps) {
   };
 
   return (
-    <div className="page">
-      <div className="topRow">
-        <button className="back" onClick={onBack}>
+    <div className={styles.page}>
+      <div className={styles.topRow}>
+        <button className={styles.back} onClick={onBack}>
           ← HUB
         </button>
         <Topbar />
@@ -242,22 +282,38 @@ export function ToolView({ tool, specs, onBack }: ToolViewProps) {
         size="md"
       />
 
-      <div className="metaRow">
+      <div className={styles.metaRow}>
         {specs && <SpecsPanel specs={specs} />}
-        <div className="statsRow">
+        <div className={styles.statsRow}>
           <StatsPanel counts={counts} />
         </div>
       </div>
 
       {loadError && (
-        <div className="error">Couldn't load catalog: {loadError}</div>
+        <div className={styles.error}>Couldn't load catalog: {loadError}</div>
+      )}
+
+      {itemErrors.length > 0 && (
+        <div className={styles.itemErrors}>
+          <div className={styles.itemErrorsTitle}>
+            {itemErrors.length} item{itemErrors.length === 1 ? "" : "s"} failed
+            — they were left unchanged, not silently skipped:
+          </div>
+          <ul className={styles.itemErrorsList}>
+            {itemErrors.map((e) => (
+              <li key={e.Id}>
+                <span className={styles.itemErrorId}>{e.Id}</span> {e.message}
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
       {!catalog && !loadError && (
-        <div className="loading">Loading catalog…</div>
+        <div className={styles.loading}>Loading catalog…</div>
       )}
 
       {catalog && (
-        <div className="checklistWrap">
+        <div className={styles.checklistWrap}>
           <ChecklistPanel
             items={catalog}
             levelMeta={cfg.levelMeta}

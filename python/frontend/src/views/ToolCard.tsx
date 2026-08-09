@@ -1,7 +1,7 @@
 import type { ToolMeta } from "../api";
 import { Button } from "../primitives/Button";
 import { Card } from "../primitives/Card";
-import "./ToolCard.css";
+import styles from "./ToolCard.module.css";
 
 interface ToolCardProps {
   tool: ToolMeta;
@@ -17,18 +17,22 @@ const TAG_COLOR: Record<string, string> = {
 export function ToolCard({ tool, onLaunch }: ToolCardProps) {
   return (
     <Card interactive>
-      <div className="row">
-        <div className="texts">
-          <div className="titleLine">
-            <span className="name">{tool.Name}</span>
-            <span className="tag" style={{ color: TAG_COLOR[tool.Key] }}>
+      <div className={styles.row}>
+        <div className={styles.texts}>
+          <div className={styles.titleLine}>
+            <span className={styles.name}>{tool.Name}</span>
+            <span className={styles.tag} style={{ color: TAG_COLOR[tool.Key] }}>
               {tool.Tag}
             </span>
           </div>
-          <p className="desc">{tool.Desc}</p>
-          <div className="meta">{tool.Meta}</div>
+          <p className={styles.desc}>{tool.Desc}</p>
+          <div className={styles.meta}>{tool.Meta}</div>
         </div>
-        <Button variant="primary" className="launchBtn" onClick={onLaunch}>
+        <Button
+          variant="primary"
+          className={styles.launchBtn}
+          onClick={onLaunch}
+        >
           Launch →
         </Button>
       </div>

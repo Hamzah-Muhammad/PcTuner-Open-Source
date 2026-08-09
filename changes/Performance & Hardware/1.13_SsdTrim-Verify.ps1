@@ -1,4 +1,4 @@
-# 1.13 — SSD TRIM enabled (verify). Performance & Hardware sector.
+﻿# 1.13 — SSD TRIM enabled (verify). Performance & Hardware sector.
 # TRIM keeps SSD write performance healthy. DisableDeleteNotify's fsutil
 # output is per-filesystem text, not a single "= N" value like the other
 # fsutil settings, so this uses its own parse/apply instead of the shared
@@ -18,7 +18,7 @@ Invoke-PrimeChange -Id '1.13' -Check:$Check -Apply:$Apply -Undo:$Undo -PreviousV
     -CheckBlock {
         $line = Get-NtfsTrimLine
         if ($line -and $line -match '(\d)') { [pscustomobject]@{ Current = $line; Compliant = ($Matches[1] -eq '0') } }
-        else { [pscustomobject]@{ Current = ($line ?? 'unreadable'); Compliant = $null } }
+        else { [pscustomobject]@{ Current = (if ($line) { $line } else { 'unreadable' }); Compliant = $null } }
     } `
     -ApplyBlock {
         $prevLine = Get-NtfsTrimLine

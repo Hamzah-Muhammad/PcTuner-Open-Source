@@ -1,4 +1,4 @@
-import "./Checkbox.css";
+import styles from "./Checkbox.module.css";
 
 interface CheckboxProps {
   checked: boolean;
@@ -9,9 +9,9 @@ interface CheckboxProps {
 /** Ports the "PrimeCheck" custom ControlTemplate. */
 export function Checkbox({ checked, onChange, label }: CheckboxProps) {
   return (
-    <span className="checkbox">
+    <span className={styles.checkbox}>
       <input
-        className="input"
+        className={styles.input}
         type="checkbox"
         checked={checked}
         onChange={(e) => onChange(e.target.checked)}
@@ -25,8 +25,8 @@ export function Checkbox({ checked, onChange, label }: CheckboxProps) {
         }}
         aria-label={label}
       />
-      <span className="box">
-        <span className="mark">✓</span>
+      <span className={styles.box}>
+        <span className={styles.mark}>✓</span>
       </span>
     </span>
   );

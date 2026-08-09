@@ -1,4 +1,4 @@
-# 3.4 — Defender exclusions for game folders (review). Windows Changes sector.
+﻿# 3.4 — Defender exclusions for game folders (review). Windows Changes sector.
 # Human-review item — Apply is deliberately not implemented (which folders to
 # exclude is a per-item human choice, not automatable). HARD RULE reflected
 # in the check itself: flags (never silently accepts) Temp/profile-root/

@@ -207,19 +207,52 @@ def test_undo_sequential_builds_previous_value_json(monkeypatch):
         return FakeProc(0, json.dumps({"Id": "A", "Mode": "Undo", "Success": True, "Note": None}))
 
     monkeypatch.setattr(subprocess, "run", fake_run)
-    items_by_id = {"A": _item(Id="A", script_path="C:\\fake\\A.ps1")}
-    records = [{"Id": "A", "PreviouslyExisted": True, "PreviousValue": 5}]
-    results = list(ps_bridge.undo_sequential(items_by_id, records))
+    records = [
+        {
+            "Id": "A",
+            "PreviouslyExisted": True,
+            "PreviousValue": 5,
+            "ScriptPath": "C:\\fake\\A.ps1",
+            "ScriptArgs": {},
+        }
+    ]
+    results = list(ps_bridge.undo_sequential(records))
     assert results[0].Success is True
     prev_json_index = captured["cmd"].index("-PreviousValueJson") + 1
     assert json.loads(captured["cmd"][prev_json_index]) == {"PreviouslyExisted": True, "PreviousValue": 5}
 
 
-def test_undo_sequential_missing_item_reports_failure():
+def test_undo_sequential_uses_snapshotted_target_not_catalog_lookup(monkeypatch):
+    """The whole point of C2's fix: Undo must act on the ScriptPath/ScriptArgs
+    recorded at apply time, never on a freshly-reloaded catalog — proven here
+    by never even constructing a catalog, let alone a stale/shifted one."""
+    captured = {}
+
+    def fake_run(cmd, **kw):
+        captured["cmd"] = cmd
+        return FakeProc(0, json.dumps({"Id": "R.abc123", "Mode": "Undo", "Success": True, "Note": None}))
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    records = [
+        {
+            "Id": "R.abc123",
+            "PreviouslyExisted": True,
+            "PreviousValue": "some-old-command",
+            "ScriptPath": "C:\\fake\\RunKeyEntry.ps1",
+            "ScriptArgs": {"RegPath": "HKCU:\\Run", "ValueName": "LGHUB"},
+        }
+    ]
+    results = list(ps_bridge.undo_sequential(records))
+    assert results[0].Success is True
+    assert "-RegPath" in captured["cmd"] and "HKCU:\\Run" in captured["cmd"]
+    assert "-ValueName" in captured["cmd"] and "LGHUB" in captured["cmd"]
+
+
+def test_undo_sequential_missing_script_path_reports_failure():
     record = {"Id": "ghost", "PreviouslyExisted": True, "PreviousValue": 1}
-    results = list(ps_bridge.undo_sequential({}, [record]))
+    results = list(ps_bridge.undo_sequential([record]))
     assert results[0].Success is False
-    assert "no longer in catalog" in results[0].Error
+    assert "no script recorded" in results[0].Error
 
 
 def test_check_game_running_parses_output(monkeypatch):

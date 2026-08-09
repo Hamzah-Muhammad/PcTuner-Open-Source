@@ -1,4 +1,4 @@
-# ScheduledTask.ps1 — PC Startup sector action script. Parameterized per
+﻿# ScheduledTask.ps1 — PC Startup sector action script. Parameterized per
 # discovered logon/boot task from Enumerate.ps1 — not a fixed catalog item.
 param(
     [Parameter(Mandatory)][string]$TaskPath,

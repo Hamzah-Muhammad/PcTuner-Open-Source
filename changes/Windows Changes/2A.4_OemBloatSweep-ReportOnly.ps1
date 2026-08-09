@@ -1,4 +1,4 @@
-# 2A.4 — OEM vendor bloat sweep (report-only). Windows Changes sector.
+﻿# 2A.4 — OEM vendor bloat sweep (report-only). Windows Changes sector.
 # Lists known OEM utility leftovers; never auto-removes — Apply is
 # deliberately not implemented, this is a REVIEW-only item by design.
 param([switch]$Check, [switch]$Apply, [switch]$Undo, [string]$PreviousValueJson)

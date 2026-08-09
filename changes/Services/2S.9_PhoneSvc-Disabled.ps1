@@ -1,4 +1,4 @@
-# 2S.9 — PhoneSvc -> Disabled. Services sector.
+﻿# 2S.9 — PhoneSvc -> Disabled. Services sector.
 # Phone Link backend. Guard: this item's Desc (manifest.json) warns the user
 # if Phone Link is in use — no runtime prompt here, headless scripts can't
 # interactively prompt; the warning is surfaced in the UI before checking.

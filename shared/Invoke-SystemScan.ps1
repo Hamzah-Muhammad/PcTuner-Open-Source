@@ -1,4 +1,4 @@
-# Invoke-SystemScan.ps1 — the "Scan PC" broad system inventory (§6.7).
+﻿# Invoke-SystemScan.ps1 — the "Scan PC" broad system inventory (§6.7).
 # One coherent read, not a per-item "change" script — no -Check/-Apply/-Undo
 # modes, just gathers and reports. Writes shared\cache\SystemScan.json (read
 # by individual change scripts via Get-CachedSystemScan in PrimeChecks.ps1,

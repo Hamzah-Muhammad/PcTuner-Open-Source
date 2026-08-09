@@ -1,4 +1,4 @@
-# PrimeHeadless.ps1 — mode-dispatch harness for every individual change
+﻿# PrimeHeadless.ps1 — mode-dispatch harness for every individual change
 # script under changes\<Sector>\*.ps1. Dot-source AFTER shared\PrimeChecks.ps1.
 #
 # No WPF, no STA relaunch, no self-elevation prompt here on purpose — the

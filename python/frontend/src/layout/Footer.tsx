@@ -1,4 +1,4 @@
-import "./Footer.css";
+import styles from "./Footer.module.css";
 
 interface FooterProps {
   note: string;
@@ -6,9 +6,9 @@ interface FooterProps {
 
 export function Footer({ note }: FooterProps) {
   return (
-    <div className="footer">
+    <div className={styles.footer}>
       <span>
-        <span className="at">@</span>Humzeeny
+        <span className={styles.at}>@</span>Humzeeny
       </span>
       <span>{note}</span>
     </div>

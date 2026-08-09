@@ -1,4 +1,4 @@
-# 2S.3 — WerSvc -> Disabled. Services sector.
+﻿# 2S.3 — WerSvc -> Disabled. Services sector.
 # Windows Error Reporting upload.
 param([switch]$Check, [switch]$Apply, [switch]$Undo, [string]$PreviousValueJson)
 $ScriptDir = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent ([Diagnostics.Process]::GetCurrentProcess().MainModule.FileName) }

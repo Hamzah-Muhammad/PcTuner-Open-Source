@@ -1,4 +1,4 @@
-# 2S.10 — lfsvc -> Disabled. Services sector.
+﻿# 2S.10 — lfsvc -> Disabled. Services sector.
 # Geolocation. Guard: this item's Desc (manifest.json) warns some apps want
 # location — no runtime prompt here, see 2S.9's note on headless prompting.
 param([switch]$Check, [switch]$Apply, [switch]$Undo, [string]$PreviousValueJson)

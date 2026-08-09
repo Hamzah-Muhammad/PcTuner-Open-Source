@@ -1,4 +1,4 @@
-# 1.8 — Remove Edge autolaunch from startup. Windows Changes sector.
+﻿# 1.8 — Remove Edge autolaunch from startup. Windows Changes sector.
 # Edge re-adds a MicrosoftEdgeAutoLaunch_* Run entry after updates — the
 # value NAME is dynamic (includes a hash suffix), so Apply enumerates and
 # removes all matches rather than targeting one fixed name.

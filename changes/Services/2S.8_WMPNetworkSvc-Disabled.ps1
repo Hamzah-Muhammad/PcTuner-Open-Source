@@ -1,4 +1,4 @@
-# 2S.8 — WMPNetworkSvc -> Disabled. Services sector.
+﻿# 2S.8 — WMPNetworkSvc -> Disabled. Services sector.
 # Media Player network sharing.
 param([switch]$Check, [switch]$Apply, [switch]$Undo, [string]$PreviousValueJson)
 $ScriptDir = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent ([Diagnostics.Process]::GetCurrentProcess().MainModule.FileName) }

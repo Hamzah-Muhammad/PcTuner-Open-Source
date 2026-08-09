@@ -161,12 +161,18 @@ def test_undo_no_prior_apply_404(client):
 
 
 def test_undo_uses_latest_log(client, monkeypatch):
-    undo_record = {"Id": "A.1", "PreviouslyExisted": True, "PreviousValue": 1}
+    undo_record = {
+        "Id": "A.1",
+        "PreviouslyExisted": True,
+        "PreviousValue": 1,
+        "ScriptPath": "C:\\fake\\A.ps1",
+        "ScriptArgs": {},
+    }
     monkeypatch.setattr(reports, "latest_undo_log", lambda tool: [undo_record])
     monkeypatch.setattr(
         ps_bridge,
         "undo_sequential",
-        lambda items_by_id, records: iter([UndoItemResult(Id="A.1", Success=True)]),
+        lambda records: iter([UndoItemResult(Id="A.1", Success=True)]),
     )
     resp = client.post("/api/fps/undo")
     assert resp.status_code == 200

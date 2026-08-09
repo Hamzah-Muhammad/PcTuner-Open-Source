@@ -37,7 +37,9 @@ function App() {
     setScanPcError(null);
     try {
       const inventory = await api.scanPc();
-      setToolsData((prev) => (prev ? { ...prev, specs: inventory.Specs } : prev));
+      setToolsData((prev) =>
+        prev ? { ...prev, specs: inventory.Specs } : prev,
+      );
     } catch (e) {
       setScanPcError(e instanceof Error ? e.message : "scan failed");
     } finally {

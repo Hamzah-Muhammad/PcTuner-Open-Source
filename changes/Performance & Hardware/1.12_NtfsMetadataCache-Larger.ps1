@@ -1,4 +1,4 @@
-# 1.12 — Larger NTFS metadata cache. Performance & Hardware sector.
+﻿# 1.12 — Larger NTFS metadata cache. Performance & Hardware sector.
 # Fewer metadata disk hits. Needs a reboot to take effect.
 param([switch]$Check, [switch]$Apply, [switch]$Undo, [string]$PreviousValueJson)
 $ScriptDir = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent ([Diagnostics.Process]::GetCurrentProcess().MainModule.FileName) }

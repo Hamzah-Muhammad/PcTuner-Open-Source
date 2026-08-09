@@ -9,7 +9,7 @@ from datetime import datetime
 from pathlib import Path
 
 from . import paths
-from .models import ApplyItemResult, PCSpecs, ScanResult
+from .models import ApplyItemResult, CatalogItem, PCSpecs, ScanResult
 
 REPORT_TITLES = {"fps": "FPS Optimizer dry run", "startup": "Startup Optimizer dry run"}
 
@@ -120,14 +120,25 @@ class UndoLog:
         self.path = log_dir / f"UndoLog_{_timestamp()}.json"
         self._records: list[dict] = []
 
-    def record(self, result: ApplyItemResult) -> None:
+    def record(self, result: ApplyItemResult, item: CatalogItem) -> None:
         if not result.Success:
             return
+        # ScriptPath/ScriptArgs are snapshotted from the exact item that was
+        # just applied, not re-resolved from a fresh catalog lookup at undo
+        # time. This matters most for Startup Optimizer: a fresh catalog
+        # reload re-enumerates the PC's live registry/tasks, and if the item
+        # this record is FOR was itself just removed, undo would otherwise
+        # have no way to find it — or worse, silently resolve to a different
+        # entry that happens to reuse the same Id after re-enumeration.
+        # Storing the real target here means Undo never needs the catalog at
+        # all: it acts on exactly what Apply actually touched.
         self._records.append(
             {
                 "Id": result.Id,
                 "PreviouslyExisted": result.PreviouslyExisted,
                 "PreviousValue": result.PreviousValue,
+                "ScriptPath": item.ScriptPath,
+                "ScriptArgs": item.ScriptArgs,
             }
         )
         self.path.write_text(json.dumps(self._records, indent=2), encoding="utf-8")

@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import "./Chip.css";
+import styles from "./Chip.module.css";
 
 interface ChipProps {
   label: string;
@@ -10,10 +10,10 @@ interface ChipProps {
 /** Ports the "Chip" XAML Style — used for spec chips and scan-stat chips. */
 export function Chip({ label, value, valueColor }: ChipProps) {
   return (
-    <span className="chip">
-      <span className="label">{label}</span>
+    <span className={styles.chip}>
+      <span className={styles.label}>{label}</span>
       <span
-        className="value"
+        className={styles.value}
         style={valueColor ? { color: valueColor } : undefined}
       >
         {value}

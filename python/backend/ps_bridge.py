@@ -200,16 +200,39 @@ def apply_sequential(items_by_id: dict[str, CatalogItem], checked_ids: list[str]
             yield ApplyItemResult(Id=item_id, Success=False, Error=e.message)
 
 
-def undo_sequential(items_by_id: dict[str, CatalogItem], undo_records: list[dict]):
+def undo_sequential(undo_records: list[dict]):
     """`undo_records` are prior ApplyItemResult-shaped dicts (Id/PreviouslyExisted/
-    PreviousValue) from the most recent apply run's undo log — the exact shape
-    the PS UndoBlock's `$Prev` parameter expects.
+    PreviousValue/ScriptPath/ScriptArgs) from the most recent apply run's undo
+    log — the exact shape the PS UndoBlock's `$Prev` parameter expects.
+
+    Deliberately does NOT look the item back up in a freshly-loaded catalog:
+    ScriptPath/ScriptArgs are snapshotted at apply time (reports.UndoLog.record),
+    so Undo acts on exactly what Apply touched regardless of what the catalog
+    looks like now. This matters for Startup Optimizer, whose catalog is
+    re-enumerated live from the registry/task scheduler on every load — an
+    item that Apply just removed may no longer appear at all, or a stale
+    positional Id could otherwise resolve to a different, unrelated entry.
     """
     for record in undo_records:
-        item = items_by_id.get(record["Id"])
-        if item is None:
-            yield UndoItemResult(Id=record["Id"], Success=False, Error="item no longer in catalog")
+        script_path = record.get("ScriptPath")
+        if not script_path:
+            yield UndoItemResult(
+                Id=record["Id"],
+                Success=False,
+                Error="no script recorded for this item — apply log predates this format",
+            )
             continue
+        item = CatalogItem(
+            Id=record["Id"],
+            Level=0,
+            Module="",
+            Name="",
+            Desc="",
+            Target="",
+            DefaultChecked=False,
+            ScriptPath=script_path,
+            ScriptArgs=record.get("ScriptArgs") or {},
+        )
         prev_json = json.dumps(
             {
                 "PreviouslyExisted": record.get("PreviouslyExisted"),

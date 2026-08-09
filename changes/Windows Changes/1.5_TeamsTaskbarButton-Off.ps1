@@ -1,4 +1,4 @@
-# 1.5 — Teams taskbar button hidden. Windows Changes sector.
+﻿# 1.5 — Teams taskbar button hidden. Windows Changes sector.
 param([switch]$Check, [switch]$Apply, [switch]$Undo, [string]$PreviousValueJson)
 $ScriptDir = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent ([Diagnostics.Process]::GetCurrentProcess().MainModule.FileName) }
 . (Join-Path $ScriptDir '..\..\shared\PrimeChecks.ps1')

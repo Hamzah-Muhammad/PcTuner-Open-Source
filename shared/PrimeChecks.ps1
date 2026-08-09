@@ -1,4 +1,4 @@
-# PrimeChecks.ps1 — shared I/O primitives for every individual change script
+﻿# PrimeChecks.ps1 — shared I/O primitives for every individual change script
 # under changes\<Sector>\*.ps1. Dot-source this before PrimeHeadless.ps1.
 #
 # Read-only Test-* functions predate this file (moved here unchanged from the
@@ -34,7 +34,14 @@ function Set-RegValueTracked {
     param($Path, $Name, $Value, [string]$Type = 'DWord')
     $existed = $false; $prev = $null
     try { $prev = (Get-ItemProperty -Path $Path -Name $Name -ErrorAction Stop).$Name; $existed = $true } catch {}
-    New-Item -Path $Path -Force -ErrorAction SilentlyContinue | Out-Null
+    # `New-Item -Force` on a key that ALREADY EXISTS does not no-op — it
+    # recreates the key, silently deleting every OTHER value already stored
+    # under it (confirmed directly: a disposable test key with two values
+    # lost the untouched second value the moment -Force ran again on the
+    # already-existing key). Only create when genuinely missing.
+    if (-not (Test-Path -Path $Path)) {
+        New-Item -Path $Path -Force -ErrorAction SilentlyContinue | Out-Null
+    }
     Set-ItemProperty -Path $Path -Name $Name -Value $Value -Type $Type
     New-TrackedResult -Success $true -PreviouslyExisted $existed -PreviousValue $prev
 }
@@ -61,19 +68,49 @@ function Test-ServiceStartMode {
     }
 }
 
+function Resolve-ServiceStartupTypeValue {
+    # Win32_Service.StartMode's CIM vocabulary (Boot/System/Auto/Manual/
+    # Disabled) does not line up with Set-Service -StartupType's enum, whose
+    # exact member set differs by host: Windows PowerShell 5.1's
+    # System.ServiceProcess.ServiceStartMode has no delayed-start member at
+    # all, while PowerShell 7's Microsoft.PowerShell.Commands.ServiceStartupType
+    # adds AutomaticDelayedStart. Passing CIM's literal "Auto" straight
+    # through either silently binds to the wrong member via partial-name
+    # matching (5.1 quietly accepts "Auto" as a prefix of "Automatic") or
+    # throws outright on an ambiguous prefix (7, now that AutomaticDelayedStart
+    # also starts with "Auto") — resolving to a full, explicit member name
+    # here removes the ambiguity on both hosts.
+    param([string]$StartMode, [bool]$DelayedAutoStart)
+    if ($StartMode -eq 'Auto') {
+        if ($DelayedAutoStart) { return 'AutomaticDelayedStart' }
+        return 'Automatic'
+    }
+    return $StartMode   # Boot / System / Manual / Disabled already match literally
+}
+
 function Set-ServiceStartModeTracked {
     param($Svc, $Expected)
     $s = Get-CimInstance Win32_Service -Filter "Name='$Svc'" -ErrorAction SilentlyContinue
     if (-not $s) { return New-TrackedResult -Success $true -Note 'service not present — nothing to do' }
     $prevMode = $s.StartMode
+    $prevDelayed = [bool]$s.DelayedAutoStart
     Set-Service -Name $Svc -StartupType $Expected -ErrorAction Stop
-    New-TrackedResult -Success $true -PreviouslyExisted $true -PreviousValue $prevMode
+    New-TrackedResult -Success $true -PreviouslyExisted $true -PreviousValue @{ StartMode = $prevMode; DelayedAutoStart = $prevDelayed }
 }
 
 function Undo-ServiceStartModeTracked {
     param($Svc, [bool]$PreviouslyExisted, $PreviousValue)
     if (-not $PreviouslyExisted) { return New-TrackedResult -Success $true -Note 'was not present at apply time — nothing to restore' }
-    Set-Service -Name $Svc -StartupType $PreviousValue -ErrorAction Stop
+    $target = Resolve-ServiceStartupTypeValue -StartMode $PreviousValue.StartMode -DelayedAutoStart ([bool]$PreviousValue.DelayedAutoStart)
+    try {
+        Set-Service -Name $Svc -StartupType $target -ErrorAction Stop
+    } catch {
+        if ($target -ne 'AutomaticDelayedStart') { throw }
+        # Delayed-start isn't representable on every host (Windows PowerShell
+        # 5.1 has no such enum member) — fall back to plain Automatic rather
+        # than failing the whole undo over losing just that nuance.
+        Set-Service -Name $Svc -StartupType 'Automatic' -ErrorAction Stop
+    }
     New-TrackedResult -Success $true
 }
 
@@ -137,7 +174,17 @@ function Disable-ScheduledTaskTracked {
     param($TaskPath, $TaskName)
     $t = Get-ScheduledTask -TaskPath $TaskPath -TaskName $TaskName -ErrorAction SilentlyContinue
     if (-not $t) { return New-TrackedResult -Success $true -Note 'task not present — nothing to do' }
-    $prevState = $t.State
+    # .State is a StateEnum, not a string — ConvertTo-Json serializes an
+    # unstringified enum as its underlying INTEGER, which then can never
+    # -eq 'Disabled' again on the undo side. Stringify at the source instead
+    # of trying to compare around the problem later.
+    $prevState = $t.State.ToString()
+    if ($prevState -eq 'Disabled') {
+        # Already compliant — applying again would be a false "we changed
+        # this" that then makes Undo re-enable a task the tool never
+        # actually touched.
+        return New-TrackedResult -Success $true -PreviouslyExisted $true -PreviousValue $prevState -Note 'already Disabled — no action taken'
+    }
     Disable-ScheduledTask -TaskPath $TaskPath -TaskName $TaskName -ErrorAction Stop | Out-Null
     New-TrackedResult -Success $true -PreviouslyExisted $true -PreviousValue $prevState
 }
@@ -145,7 +192,7 @@ function Disable-ScheduledTaskTracked {
 function Undo-ScheduledTaskTracked {
     param($TaskPath, $TaskName, [bool]$PreviouslyExisted, $PreviousValue)
     if (-not $PreviouslyExisted) { return New-TrackedResult -Success $true -Note 'was not present at apply time — nothing to restore' }
-    if ($PreviousValue -eq 'Disabled') { return New-TrackedResult -Success $true -Note 'was already Disabled — nothing to restore' }
+    if ("$PreviousValue" -eq 'Disabled') { return New-TrackedResult -Success $true -Note 'was already Disabled — nothing to restore' }
     Enable-ScheduledTask -TaskPath $TaskPath -TaskName $TaskName -ErrorAction Stop | Out-Null
     New-TrackedResult -Success $true
 }

@@ -1,4 +1,4 @@
-# RunKeyEntry.ps1 — PC Startup sector action script. Parameterized per
+﻿# RunKeyEntry.ps1 — PC Startup sector action script. Parameterized per
 # discovered Run-key entry from Enumerate.ps1 — not a fixed catalog item.
 param(
     [Parameter(Mandatory)][string]$RegPath,

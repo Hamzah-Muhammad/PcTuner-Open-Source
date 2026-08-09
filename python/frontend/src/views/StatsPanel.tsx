@@ -1,4 +1,4 @@
-import "./StatsPanel.css";
+import styles from "./StatsPanel.module.css";
 
 export interface ScanCounts {
   applied: number;
@@ -23,14 +23,14 @@ interface StatsPanelProps {
 /** Ports the scan-stat chip row built inline in New-PrimeChecklistApp. */
 export function StatsPanel({ counts }: StatsPanelProps) {
   return (
-    <div className="panel">
+    <div className={styles.panel}>
       {STAT_DEFS.map((sd) => (
-        <span className="chip" key={sd.key}>
-          <span className="dot" style={{ color: sd.color }}>
+        <span className={styles.chip} key={sd.key}>
+          <span className={styles.dot} style={{ color: sd.color }}>
             ●
           </span>
-          <span className="num">{counts ? counts[sd.key] : "–"}</span>
-          <span className="label">{sd.label}</span>
+          <span className={styles.num}>{counts ? counts[sd.key] : "–"}</span>
+          <span className={styles.label}>{sd.label}</span>
         </span>
       ))}
     </div>

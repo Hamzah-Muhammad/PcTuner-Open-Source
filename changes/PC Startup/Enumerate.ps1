@@ -1,4 +1,4 @@
-# Enumerate.ps1 — discovery step for the PC Startup sector (§3). PC-specific,
+﻿# Enumerate.ps1 — discovery step for the PC Startup sector (§3). PC-specific,
 # not a static catalog like the other sectors — lists every Run-key entry,
 # startup-folder shortcut, and logon/boot scheduled task actually present on
 # THIS PC, with enough identifying detail (registry path+name, file path,
@@ -11,6 +11,23 @@
 param([switch]$Json)
 $ErrorActionPreference = 'Stop'
 try { [Console]::OutputEncoding = [System.Text.Encoding]::UTF8 } catch {}
+
+# IDs must be derived from an entry's own identity (location + name), never
+# from enumeration position — Python's undo/re-scan flow re-runs this script
+# and matches results back up by Id. A positional "R.$n" scheme means
+# removing entry #1 silently renumbers every entry after it, so a later
+# Undo (or even an immediate re-scan of the same `checked` set) resolves the
+# wrong Id to a real registry value/task/file that was never touched. A
+# short hash of the entry's own (Tag, Name) pair stays stable regardless of
+# what else was added or removed around it, and simply stops appearing at
+# all once the entry itself is gone — which is the correct behavior.
+function New-ContentId {
+    param([string]$Prefix, [string]$Identity)
+    $bytes = [System.Text.Encoding]::UTF8.GetBytes($Identity)
+    $hash = [System.Security.Cryptography.SHA1]::Create().ComputeHash($bytes)
+    $hex = -join ($hash[0..2] | ForEach-Object { $_.ToString('x2') })
+    return "$Prefix.$hex"
+}
 
 # ---------- annotations for well-known startup entries ----------
 # Keep = recommended keep (item starts UNCHECKED so a general client doesn't
@@ -41,17 +58,17 @@ $runLocations = @(
     @{ Tag = 'HKLM-RO'; Path = 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce' }
     @{ Tag = 'HKLM32';  Path = 'HKLM:\SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Run' }
 )
-$rIdx = 0
+$rCount = 0
 foreach ($loc in $runLocations) {
     $key = Get-Item -Path $loc.Path -ErrorAction SilentlyContinue
     if (-not $key) { continue }
     foreach ($valName in ($key.GetValueNames() | Where-Object { $_ })) {
-        $rIdx++
+        $rCount++
         $cmd = [string]$key.GetValue($valName)
         if ($cmd.Length -gt 110) { $cmd = $cmd.Substring(0, 107) + '…' }
         $ann = Get-StartupAnnotation $valName
         $items.Add([pscustomobject]@{
-            Id = "R.$rIdx"; Level = 1; Module = 'Registry Run Entries'
+            Id = (New-ContentId 'R' "$($loc.Tag)|$valName"); Level = 1; Module = 'Registry Run Entries'
             Kind = 'RunKeyEntry'; Name = "$valName  [$($loc.Tag)]"
             Desc = "$($ann.Note)  Command: $cmd"; Target = 'entry removed from startup'
             DefaultChecked = (-not $ann.Keep)
@@ -59,7 +76,7 @@ foreach ($loc in $runLocations) {
         })
     }
 }
-if ($rIdx -eq 0) {
+if ($rCount -eq 0) {
     $items.Add([pscustomobject]@{
         Id = 'R.0'; Level = 1; Module = 'Registry Run Entries'
         Kind = $null; Name = 'No Run-key startup entries found'
@@ -73,14 +90,14 @@ $folderLocations = @(
     @{ Tag = 'user';   Path = [Environment]::GetFolderPath('Startup') }
     @{ Tag = 'common'; Path = [Environment]::GetFolderPath('CommonStartup') }
 )
-$fIdx = 0
+$fCount = 0
 foreach ($loc in $folderLocations) {
     if (-not $loc.Path -or -not (Test-Path $loc.Path)) { continue }
     foreach ($file in (Get-ChildItem -Path $loc.Path -File -ErrorAction SilentlyContinue | Where-Object { $_.Name -ne 'desktop.ini' })) {
-        $fIdx++
+        $fCount++
         $ann = Get-StartupAnnotation $file.BaseName
         $items.Add([pscustomobject]@{
-            Id = "F.$fIdx"; Level = 1; Module = 'Startup Folder Shortcuts'
+            Id = (New-ContentId 'F' "$($loc.Tag)|$($file.Name)"); Level = 1; Module = 'Startup Folder Shortcuts'
             Kind = 'StartupFolderShortcut'; Name = "$($file.Name)  [$($loc.Tag)]"
             Desc = "$($ann.Note)  Location: $($file.FullName)"; Target = 'shortcut removed from Startup folder'
             DefaultChecked = (-not $ann.Keep)
@@ -88,7 +105,7 @@ foreach ($loc in $folderLocations) {
         })
     }
 }
-if ($fIdx -eq 0) {
+if ($fCount -eq 0) {
     $items.Add([pscustomobject]@{
         Id = 'F.0'; Level = 1; Module = 'Startup Folder Shortcuts'
         Kind = $null; Name = 'Startup folders are empty'
@@ -101,7 +118,7 @@ if ($fIdx -eq 0) {
 # Scope: root-path third-party tasks, Office logon tasks, Edge/Google
 # updater logon tasks. \Microsoft\Windows\* system tasks deliberately NOT
 # touched (many are OS-critical).
-$tIdx = 0
+$tCount = 0
 $allTasks = Get-ScheduledTask -ErrorAction SilentlyContinue
 foreach ($task in $allTasks) {
     $triggers = @($task.Triggers | Where-Object { $_ } | Where-Object { $_.CimClass.CimClassName -match 'LogonTrigger|BootTrigger' })
@@ -123,16 +140,16 @@ foreach ($task in $allTasks) {
             elseif ($task.TaskPath -like '\Microsoft\Office*') { 'Office logon task — Office re-enables these on updates; re-run this tool after Office updates.' }
             else { 'Runs at logon/boot. Disabling speeds up startup; the app itself is untouched.' }
 
-    $tIdx++
+    $tCount++
     $items.Add([pscustomobject]@{
-        Id = "T.$tIdx"; Level = 2; Module = 'Logon Scheduled Tasks'
+        Id = (New-ContentId 'T' "$($task.TaskPath)|$($task.TaskName)"); Level = 2; Module = 'Logon Scheduled Tasks'
         Kind = 'ScheduledTask'; Name = $task.TaskName
         Desc = "$note  Path: $($task.TaskPath)  Runs: $exe"; Target = 'task Disabled'
         DefaultChecked = (-not $keep)
         TaskPath = $task.TaskPath; TaskName = $task.TaskName
     })
 }
-if ($tIdx -eq 0) {
+if ($tCount -eq 0) {
     $items.Add([pscustomobject]@{
         Id = 'T.0'; Level = 2; Module = 'Logon Scheduled Tasks'
         Kind = $null; Name = 'No third-party logon tasks found'

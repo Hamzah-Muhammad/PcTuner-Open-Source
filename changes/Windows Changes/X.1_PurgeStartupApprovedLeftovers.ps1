@@ -1,4 +1,4 @@
-# X.1 — Purge inert StartupApproved leftovers. Windows Changes sector.
+﻿# X.1 — Purge inert StartupApproved leftovers. Windows Changes sector.
 # Old enable/disable toggle entries whose actual startup entry is long gone —
 # registry clutter from uninstalled apps.
 param([switch]$Check, [switch]$Apply, [switch]$Undo, [string]$PreviousValueJson)

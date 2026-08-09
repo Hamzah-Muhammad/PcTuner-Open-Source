@@ -1,4 +1,4 @@
-# 2S.1 — DiagTrack -> Disabled. Services sector.
+﻿# 2S.1 — DiagTrack -> Disabled. Services sector.
 # Connected User Experiences & Telemetry — the main telemetry collector.
 param([switch]$Check, [switch]$Apply, [switch]$Undo, [string]$PreviousValueJson)
 $ScriptDir = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent ([Diagnostics.Process]::GetCurrentProcess().MainModule.FileName) }

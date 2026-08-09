@@ -1,4 +1,4 @@
-# 2S.4 — Fax -> Disabled. Services sector.
+﻿# 2S.4 — Fax -> Disabled. Services sector.
 # Fax. It is not 1996.
 param([switch]$Check, [switch]$Apply, [switch]$Undo, [string]$PreviousValueJson)
 $ScriptDir = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent ([Diagnostics.Process]::GetCurrentProcess().MainModule.FileName) }

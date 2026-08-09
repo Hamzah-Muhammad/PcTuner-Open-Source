@@ -163,7 +163,7 @@ def post_apply(tool: str, req: ApplyRequest):
         undo_log = reports.UndoLog(tool)
         results: list[ApplyItemResult] = []
         for result in ps_bridge.apply_sequential(items_by_id, checked_ids):
-            undo_log.record(result)
+            undo_log.record(result, items_by_id[result.Id])
             results.append(result)
 
         reports.write_apply_report(tool, results)
@@ -188,8 +188,7 @@ def post_undo(tool: str):
         undo_records = reports.latest_undo_log(tool)
         if not undo_records:
             raise HTTPException(404, f"no apply run to undo for '{tool}'")
-        items_by_id = _catalog_by_id(tool)
-        return list(ps_bridge.undo_sequential(items_by_id, undo_records))
+        return list(ps_bridge.undo_sequential(undo_records))
     finally:
         lock.release()
 

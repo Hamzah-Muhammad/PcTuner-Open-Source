@@ -1,4 +1,4 @@
-# 2A.3 — Fully remove Widgets apps. Windows Changes sector.
+﻿# 2A.3 — Fully remove Widgets apps. Windows Changes sector.
 # Also covers what was Startup Optimizer's W.1 — merged, identical package match.
 # WebExperience + WidgetsPlatformRuntime. After removal the Settings "Widgets"
 # toggle disappears — expected.

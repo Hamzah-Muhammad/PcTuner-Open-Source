@@ -1,4 +1,4 @@
-import "./StatusPill.css";
+import styles from "./StatusPill.module.css";
 
 export type PillStatus =
   "IDLE" | "SCANNING" | "APPLIED" | "PENDING" | "REVIEW" | "SKIPPED" | "ERROR";
@@ -60,14 +60,16 @@ interface StatusPillProps {
 export function StatusPill({ status, detail }: StatusPillProps) {
   const s = STYLES[status];
   return (
-    <div className="wrap">
+    <div className={styles.wrap}>
       <span
-        className={"pill" + (status === "SCANNING" ? " scanning" : "")}
+        className={
+          styles.pill + (status === "SCANNING" ? ` ${styles.scanning}` : "")
+        }
         style={{ color: s.fg, borderColor: s.border, background: s.bg }}
       >
         {s.text}
       </span>
-      {detail && <div className="detail">{detail}</div>}
+      {detail && <div className={styles.detail}>{detail}</div>}
     </div>
   );
 }

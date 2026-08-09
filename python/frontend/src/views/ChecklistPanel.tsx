@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import type { CatalogItem, ScanResult } from "../api";
 import { LevelGroup } from "./LevelGroup";
-import "./ChecklistPanel.css";
+import styles from "./ChecklistPanel.module.css";
 
 export interface LevelMeta {
   title: string;
@@ -47,10 +47,10 @@ export function ChecklistPanel({
   }, [items]);
 
   return (
-    <div className="panel">
+    <div className={styles.panel}>
       {scanning && (
-        <div className="overlay">
-          <span className="spinner" />
+        <div className={styles.overlay}>
+          <span className={styles.spinner} />
           Scanning… up to ~2 min
         </div>
       )}

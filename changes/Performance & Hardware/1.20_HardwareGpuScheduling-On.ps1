@@ -1,4 +1,4 @@
-# 1.20 — Hardware-accelerated GPU Scheduling on. Performance & Hardware sector.
+﻿# 1.20 — Hardware-accelerated GPU Scheduling on. Performance & Hardware sector.
 param([switch]$Check, [switch]$Apply, [switch]$Undo, [string]$PreviousValueJson)
 $ScriptDir = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent ([Diagnostics.Process]::GetCurrentProcess().MainModule.FileName) }
 . (Join-Path $ScriptDir '..\..\shared\PrimeChecks.ps1')

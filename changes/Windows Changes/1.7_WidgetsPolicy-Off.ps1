@@ -1,4 +1,4 @@
-# 1.7 — Widgets / news feed off (policy). Windows Changes sector.
+﻿# 1.7 — Widgets / news feed off (policy). Windows Changes sector.
 # Also covers what was Startup Optimizer's W.2 — merged, same registry key.
 param([switch]$Check, [switch]$Apply, [switch]$Undo, [string]$PreviousValueJson)
 $ScriptDir = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent ([Diagnostics.Process]::GetCurrentProcess().MainModule.FileName) }
