@@ -79,6 +79,19 @@ class UndoItemResult(BaseModel):
     Error: str | None = None
 
 
+class ApplyRunResult(BaseModel):
+    """Wraps the per-item results with whether the promised System Restore
+    Point actually got created — previously that failure was caught and
+    silently discarded (§8.5's restore point is a coarse safety net on top
+    of the undo log, but the confirm modal tells the user it "will be
+    created first", so a silent failure there is a broken promise, not a
+    harmless one)."""
+
+    Results: list[ApplyItemResult]
+    RestorePointOk: bool
+    RestorePointNote: str | None = None
+
+
 class InstalledSoftwareItem(BaseModel):
     Name: str
     Version: str

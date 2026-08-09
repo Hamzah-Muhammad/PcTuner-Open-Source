@@ -26,14 +26,34 @@ Invoke-PrimeChange -Id '2B.4' -Check:$Check -Apply:$Apply -Undo:$Undo -PreviousV
     -ApplyBlock {
         $prevLine = Get-ShadowStorageLine
         vssadmin resize shadowstorage /for=C: /on=C: /maxsize=10GB | Out-Null
-        New-TrackedResult -Success $true -PreviouslyExisted $true -PreviousValue $prevLine
+        New-TrackedResult -Success $true -PreviouslyExisted ($null -ne $prevLine) -PreviousValue $prevLine
     } `
     -UndoBlock {
         param($Prev)
+        if (-not $Prev.PreviouslyExisted -or $null -eq $Prev.PreviousValue) {
+            return New-TrackedResult -Success $true -Note 'no previous value recorded — leaving as-is'
+        }
         if ($Prev.PreviousValue -match 'UNBOUNDED') {
             vssadmin resize shadowstorage /for=C: /on=C: /maxsize=UNBOUNDED | Out-Null
-        } elseif ($Prev.PreviousValue -match '([\d\.]+)\s*GB') {
-            vssadmin resize shadowstorage /for=C: /on=C: /maxsize="$($Matches[1])GB" | Out-Null
+            return New-TrackedResult -Success $true
         }
-        New-TrackedResult -Success $true
+        if ($Prev.PreviousValue -match '([\d\.]+)\s*GB') {
+            # vssadmin's /maxsize rejects a fractional value outright as
+            # invalid syntax — this PC's own real recorded value ("19.1 GB")
+            # would fail exactly this way. Round UP so the restored cap is
+            # never smaller than the real original (rounding down would
+            # under-restore the size limit the user actually had).
+            $gb = [math]::Ceiling([double]$Matches[1])
+            vssadmin resize shadowstorage /for=C: /on=C: /maxsize="${gb}GB" | Out-Null
+            return New-TrackedResult -Success $true
+        }
+        if ($Prev.PreviousValue -match '([\d\.]+)\s*MB') {
+            $mb = [math]::Ceiling([double]$Matches[1])
+            vssadmin resize shadowstorage /for=C: /on=C: /maxsize="${mb}MB" | Out-Null
+            return New-TrackedResult -Success $true
+        }
+        # Genuinely unparseable (non-English locale, unexpected vssadmin
+        # output format, ...) — say so honestly instead of claiming success
+        # while silently leaving Apply's 10GB cap in place.
+        New-TrackedResult -Success $false -Note "could not parse previous value ($($Prev.PreviousValue)) — cap left at 10GB, resize manually via vssadmin if needed"
     }

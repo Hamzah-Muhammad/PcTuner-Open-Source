@@ -221,24 +221,41 @@ function Remove-AppxPackageTracked {
     $pattern = ($NamePatterns -join '|')
     $pkg = @(Get-AppxPackage -ErrorAction SilentlyContinue | Where-Object { $_.Name -match $pattern })
     if (-not $pkg.Count) { return New-TrackedResult -Success $true -Note 'not installed — nothing to do' }
-    $families = $pkg | Select-Object -ExpandProperty PackageFamilyName -Unique
+    # PackageFullName, not just PackageFamilyName — the full name (with
+    # version/architecture/publisher hash) is what's actually needed to
+    # reconstruct the real on-disk staging folder for Undo below.
+    $fullNames = $pkg | Select-Object -ExpandProperty PackageFullName -Unique
     foreach ($p in $pkg) { Remove-AppxPackage -Package $p.PackageFullName -ErrorAction Stop }
-    New-TrackedResult -Success $true -PreviouslyExisted $true -PreviousValue ($families -join ',')
+    New-TrackedResult -Success $true -PreviouslyExisted $true -PreviousValue ($fullNames -join ',')
 }
 
 function Undo-AppxPackageTracked {
     param([bool]$PreviouslyExisted, $PreviousValue)
     if (-not $PreviouslyExisted) { return New-TrackedResult -Success $true -Note 'was not installed at apply time — nothing to restore' }
-    $families = @("$PreviousValue" -split ',' | Where-Object { $_ })
+    $fullNames = @("$PreviousValue" -split ',' | Where-Object { $_ })
     $restored = [System.Collections.Generic.List[string]]::new()
     $failed = [System.Collections.Generic.List[string]]::new()
-    foreach ($fam in $families) {
-        try { Add-AppxPackage -Register -DisableDevelopmentMode -Path "$env:SystemRoot\WinStore\$fam" -ErrorAction Stop
-              $restored.Add($fam) }
-        catch { $failed.Add($fam) }
+    foreach ($full in $fullNames) {
+        # The real staging location — the previous path
+        # ($env:SystemRoot\WinStore\...) does not exist on any known
+        # Windows version, so Add-AppxPackage -Register there could never
+        # have succeeded. Test-Path first rather than attempting a call
+        # that's guaranteed to fail when the files are genuinely gone
+        # (the common case: Remove-AppxPackage without -AllUsers usually
+        # deletes the package's files here too, not just deregisters them —
+        # this only recovers the narrower case where they're still present,
+        # e.g. another user account still has the package installed).
+        $manifest = Join-Path $env:ProgramFiles "WindowsApps\$full\AppxManifest.xml"
+        if (-not (Test-Path $manifest)) {
+            $failed.Add($full)
+            continue
+        }
+        try { Add-AppxPackage -Register -DisableDevelopmentMode -Path $manifest -ErrorAction Stop
+              $restored.Add($full) }
+        catch { $failed.Add($full) }
     }
     if ($failed.Count) {
-        New-TrackedResult -Success ($restored.Count -gt 0) -Note "could not restore: $($failed -join ', ') — package likely fully de-provisioned; reinstall from Microsoft Store if needed"
+        New-TrackedResult -Success ($restored.Count -gt 0) -Note "could not restore: $($failed -join ', ') — package files are no longer on disk (fully removed/de-provisioned); reinstall from Microsoft Store if needed"
     } else {
         New-TrackedResult -Success $true
     }
@@ -250,10 +267,18 @@ function Undo-AppxPackageTracked {
 # fires, and a false "no game running" read here would be unsafe, not just
 # imprecise.
 
+# RiotClientServices is deliberately NOT here — confirmed live (2026-08-09)
+# that it's the Riot launcher/updater, which auto-starts at logon and stays
+# running as a background service regardless of whether a game is actually
+# being played. Including it made Apply permanently refuse for every Riot
+# user, every time, with no override. The actual games (VALORANT, League)
+# are already covered by their own real process names below. csgo dropped
+# (Counter-Strike 2 replaced it in place; the process no longer exists).
 $Script:KnownGameProcessNames = @(
-    'RainbowSix', 'r5apex', 'VALORANT-Win64-Shipping', 'csgo', 'cs2',
-    'FortniteClient-Win64-Shipping', 'League of Legends', 'RiotClientServices',
-    'GTA5', 'RDR2', 'eldenring', 'overwatch'
+    'RainbowSix', 'r5apex', 'VALORANT-Win64-Shipping', 'cs2',
+    'FortniteClient-Win64-Shipping', 'League of Legends',
+    'GTA5', 'RDR2', 'eldenring', 'Overwatch', 'RustClient', 'TslGame',
+    'destiny2', 'dota2', 'GenshinImpact', 'RobloxPlayerBeta'
 )
 
 function Test-GameRunningTracked {

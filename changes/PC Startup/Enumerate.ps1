@@ -41,7 +41,15 @@ function Get-StartupAnnotation {
         'Steam|EpicGames|GOG'     { return @{ Keep = $false; Note = 'Game launcher — start it when you actually game.' } }
         'Spotify'                 { return @{ Keep = $false; Note = 'Music app — not needed at boot.' } }
         'Teams'                   { return @{ Keep = $false; Note = 'Meetings app — starts fast on demand.' } }
-        'vgtray|Vanguard|Riot'    { return @{ Keep = $false; Note = 'Game anticheat/launcher tray. Removing from startup may require re-enabling before that game runs.' } }
+        # Anticheat/launcher trays default to KEEP, unlike the convenience
+        # apps above — removing Discord/Steam/Spotify from startup just
+        # means one extra click later, but removing an anticheat tray can
+        # outright block that game from launching until it's manually
+        # re-enabled. (Was previously Keep=$false here despite the note
+        # already warning about this — the flag just didn't match the text.)
+        'vgtray|Vanguard|Riot|EasyAntiCheat|BattlEye|BEService|EAAntiCheat' {
+            return @{ Keep = $true; Note = 'Game anticheat/launcher tray — removing it may block that game from launching until re-enabled. Recommended KEEP.' }
+        }
         'Rtk|Realtek'             { return @{ Keep = $false; Note = 'Audio vendor tray — audio keeps working without it.' } }
         'iTunesHelper|CCleaner|Update' { return @{ Keep = $false; Note = 'Helper/updater — the app updates itself when opened.' } }
         default                   { return @{ Keep = $false; Note = 'Starts at every logon. Removing it speeds up boot; you can still open the app manually.' } }
@@ -62,16 +70,29 @@ $rCount = 0
 foreach ($loc in $runLocations) {
     $key = Get-Item -Path $loc.Path -ErrorAction SilentlyContinue
     if (-not $key) { continue }
+    # RunOnce entries are one-shot pending operations, usually left by an
+    # installer/updater mid-process, not persistent startup apps — deleting
+    # one before it fires can strand that install/update half-finished.
+    # Name-pattern matching can't help here (RunOnce value names are
+    # typically generic/anonymous), so this is a blanket protection
+    # regardless of what Get-StartupAnnotation would otherwise say.
+    $isRunOnce = $loc.Tag -like '*-RO'
     foreach ($valName in ($key.GetValueNames() | Where-Object { $_ })) {
         $rCount++
         $cmd = [string]$key.GetValue($valName)
         if ($cmd.Length -gt 110) { $cmd = $cmd.Substring(0, 107) + '…' }
         $ann = Get-StartupAnnotation $valName
+        $keep = $ann.Keep -or $isRunOnce
+        $note = if ($isRunOnce -and -not $ann.Keep) {
+            'One-shot pending operation (RunOnce) — often left by an installer/updater mid-process. Removing it before it runs can leave that install/update incomplete. Recommended KEEP.'
+        } else {
+            $ann.Note
+        }
         $items.Add([pscustomobject]@{
             Id = (New-ContentId 'R' "$($loc.Tag)|$valName"); Level = 1; Module = 'Registry Run Entries'
             Kind = 'RunKeyEntry'; Name = "$valName  [$($loc.Tag)]"
-            Desc = "$($ann.Note)  Command: $cmd"; Target = 'entry removed from startup'
-            DefaultChecked = (-not $ann.Keep)
+            Desc = "$note  Command: $cmd"; Target = 'entry removed from startup'
+            DefaultChecked = (-not $keep)
             RegPath = $loc.Path; ValueName = $valName
         })
     }

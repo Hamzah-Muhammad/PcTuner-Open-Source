@@ -5,6 +5,7 @@ Report/log location is unchanged from today: each tool's own logs\\ folder.
 """
 
 import json
+import time
 from datetime import datetime
 from pathlib import Path
 
@@ -80,6 +81,20 @@ def latest_scan_report(tool_key: str) -> dict | None:
     return {"path": str(latest), "results": json.loads(latest.read_text(encoding="utf-8"))}
 
 
+def latest_scan_report_markdown(tool_key: str) -> str | None:
+    """The human-readable report `write_scan_report` already writes right
+    next to the JSON one — "Open report" used to point at the raw JSON
+    (`latest_scan_report` above) instead of this, which is what it was
+    actually meant to show."""
+    log_dir = paths.logs_dir(tool_key)
+    if not log_dir.is_dir():
+        return None
+    reports = sorted(log_dir.glob("DryRun_*.md"))
+    if not reports:
+        return None
+    return reports[-1].read_text(encoding="utf-8")
+
+
 def write_apply_report(tool_key: str, results: list[ApplyItemResult]) -> Path:
     log_dir = paths.logs_dir(tool_key)
     log_dir.mkdir(parents=True, exist_ok=True)
@@ -144,11 +159,39 @@ class UndoLog:
         self.path.write_text(json.dumps(self._records, indent=2), encoding="utf-8")
 
 
-def latest_undo_log(tool_key: str) -> list[dict] | None:
+def _latest_undo_log_path(tool_key: str) -> Path | None:
     log_dir = paths.logs_dir(tool_key)
     if not log_dir.is_dir():
         return None
     logs = sorted(log_dir.glob("UndoLog_*.json"))
-    if not logs:
+    return logs[-1] if logs else None
+
+
+def latest_undo_log(tool_key: str) -> list[dict] | None:
+    path = _latest_undo_log_path(tool_key)
+    if path is None:
         return None
-    return json.loads(logs[-1].read_text(encoding="utf-8"))
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def undo_log_age_seconds(tool_key: str) -> float | None:
+    """None means no undo log exists at all (mirrors latest_undo_log). Used
+    so the UI can warn before replaying an old snapshot instead of silently
+    offering it forever with no indication of how stale it is."""
+    path = _latest_undo_log_path(tool_key)
+    if path is None:
+        return None
+    return max(0.0, time.time() - path.stat().st_mtime)
+
+
+def retire_undo_log(tool_key: str) -> None:
+    """Renames (never deletes — keeps the historical record on disk, same
+    posture as every other report/log here) the most recent undo log once
+    it's been fully, successfully replayed, so "Undo last apply" can't fire
+    a second time against a run that's already been undone. Only call this
+    after every item in the run succeeded — a partial failure should leave
+    the log in place so the user can retry."""
+    path = _latest_undo_log_path(tool_key)
+    if path is None:
+        return
+    path.rename(path.with_name(f"Consumed{path.name}"))

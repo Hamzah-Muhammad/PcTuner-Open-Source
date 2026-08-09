@@ -76,6 +76,23 @@ def test_report_latest_after_scan(client, monkeypatch):
     assert body["results"][0]["Id"] == "A.1"
 
 
+def test_report_latest_markdown_404_before_any_scan(client):
+    assert client.get("/api/fps/report/latest.md").status_code == 404
+
+
+def test_report_latest_markdown_serves_the_real_readable_report(client, monkeypatch):
+    scanned = [ScanResult(Id="A.1", Name="Item A", Status="PENDING", Current="off", Target="on")]
+    monkeypatch.setattr(ps_bridge, "scan_catalog", lambda items, checked: scanned)
+    client.post("/api/fps/scan", json={"checked": ["A.1"]})
+
+    resp = client.get("/api/fps/report/latest.md")
+    assert resp.status_code == 200
+    assert resp.headers["content-type"].startswith("text/markdown")
+    # The actual Markdown table, not the raw JSON "Open report" used to open.
+    assert "| Id | Item | Status | Current | Target |" in resp.text
+    assert "A.1" in resp.text
+
+
 def test_apply_requires_prior_scan(client):
     resp = client.post("/api/fps/apply", json={"checked": ["A.1"]})
     assert resp.status_code == 400
@@ -147,13 +164,91 @@ def test_apply_writes_undo_log_only_for_successful_items(client, monkeypatch, tm
     assert [r["Id"] for r in records] == ["A.1"]
 
 
+def test_apply_invalidates_last_scan_so_it_cant_fire_twice(client, monkeypatch):
+    scanned = [ScanResult(Id="A.1", Name="Item A", Status="PENDING", Current="off", Target="on")]
+    monkeypatch.setattr(ps_bridge, "scan_catalog", lambda items, checked: scanned)
+    client.post("/api/fps/scan", json={"checked": ["A.1"]})
+
+    monkeypatch.setattr(ps_bridge, "check_game_running", lambda: {"GameRunning": False, "Names": None})
+    monkeypatch.setattr(ps_bridge, "create_restore_point", lambda desc: {"Success": True, "Note": None})
+    monkeypatch.setattr(
+        ps_bridge,
+        "apply_sequential",
+        lambda items_by_id, checked_ids: iter(
+            [ApplyItemResult(Id="A.1", Success=True, PreviouslyExisted=True, PreviousValue=1)]
+        ),
+    )
+
+    first = client.post("/api/fps/apply", json={"checked": ["A.1"]})
+    assert first.status_code == 200
+
+    # Same body, no fresh scan in between -- must be rejected server-side,
+    # not silently re-applied against the now-stale scan. Without this, a
+    # second apply's undo record would capture the already-optimized value
+    # as "PreviousValue", so Undo would "restore" straight back to it.
+    second = client.post("/api/fps/apply", json={"checked": ["A.1"]})
+    assert second.status_code == 400
+    assert "scan before applying" in second.json()["detail"]
+
+
+def test_apply_surfaces_restore_point_failure_instead_of_swallowing_it(client, monkeypatch):
+    scanned = [ScanResult(Id="A.1", Name="Item A", Status="PENDING", Current="off", Target="on")]
+    monkeypatch.setattr(ps_bridge, "scan_catalog", lambda items, checked: scanned)
+    client.post("/api/fps/scan", json={"checked": ["A.1"]})
+
+    monkeypatch.setattr(ps_bridge, "check_game_running", lambda: {"GameRunning": False, "Names": None})
+    monkeypatch.setattr(
+        ps_bridge,
+        "create_restore_point",
+        lambda desc: {"Success": False, "Note": "throttled — one per 24h"},
+    )
+    monkeypatch.setattr(
+        ps_bridge,
+        "apply_sequential",
+        lambda items_by_id, checked_ids: iter(
+            [ApplyItemResult(Id="A.1", Success=True, PreviouslyExisted=True, PreviousValue=1)]
+        ),
+    )
+
+    body = client.post("/api/fps/apply", json={"checked": ["A.1"]}).json()
+    assert body["RestorePointOk"] is False
+    assert body["RestorePointNote"] == "throttled — one per 24h"
+    # The item itself still applied -- restore point failing is advisory,
+    # never a reason to block or hide a real, successful change.
+    assert body["Results"][0]["Success"] is True
+
+
+def test_apply_response_is_success_when_restore_point_succeeds(client, monkeypatch):
+    scanned = [ScanResult(Id="A.1", Name="Item A", Status="PENDING", Current="off", Target="on")]
+    monkeypatch.setattr(ps_bridge, "scan_catalog", lambda items, checked: scanned)
+    client.post("/api/fps/scan", json={"checked": ["A.1"]})
+
+    monkeypatch.setattr(ps_bridge, "check_game_running", lambda: {"GameRunning": False, "Names": None})
+    monkeypatch.setattr(ps_bridge, "create_restore_point", lambda desc: {"Success": True, "Note": None})
+    monkeypatch.setattr(
+        ps_bridge,
+        "apply_sequential",
+        lambda items_by_id, checked_ids: iter(
+            [ApplyItemResult(Id="A.1", Success=True, PreviouslyExisted=True, PreviousValue=1)]
+        ),
+    )
+
+    body = client.post("/api/fps/apply", json={"checked": ["A.1"]}).json()
+    assert body["RestorePointOk"] is True
+    assert body["RestorePointNote"] is None
+
+
 def test_undo_available_false_before_any_apply(client):
-    assert client.get("/api/fps/undo/available").json() == {"available": False}
+    assert client.get("/api/fps/undo/available").json() == {
+        "available": False,
+        "ageSeconds": None,
+    }
 
 
 def test_undo_available_true_after_apply(client, monkeypatch):
-    monkeypatch.setattr(reports, "latest_undo_log", lambda tool: [{"Id": "A.1"}])
-    assert client.get("/api/fps/undo/available").json() == {"available": True}
+    monkeypatch.setattr(reports, "undo_log_age_seconds", lambda tool: 42.0)
+    body = client.get("/api/fps/undo/available").json()
+    assert body == {"available": True, "ageSeconds": 42.0}
 
 
 def test_undo_no_prior_apply_404(client):
@@ -177,6 +272,64 @@ def test_undo_uses_latest_log(client, monkeypatch):
     resp = client.post("/api/fps/undo")
     assert resp.status_code == 200
     assert resp.json()[0]["Success"] is True
+
+
+def test_undo_retires_log_on_full_success(client, monkeypatch, tmp_path):
+    scanned = [ScanResult(Id="A.1", Name="Item A", Status="PENDING", Current="off", Target="on")]
+    monkeypatch.setattr(ps_bridge, "scan_catalog", lambda items, checked: scanned)
+    client.post("/api/fps/scan", json={"checked": ["A.1"]})
+
+    monkeypatch.setattr(ps_bridge, "check_game_running", lambda: {"GameRunning": False, "Names": None})
+    monkeypatch.setattr(ps_bridge, "create_restore_point", lambda desc: {"Success": True, "Note": None})
+
+    def fake_apply_sequential(items_by_id, checked_ids):
+        yield ApplyItemResult(Id="A.1", Success=True, PreviouslyExisted=True, PreviousValue=1)
+
+    monkeypatch.setattr(ps_bridge, "apply_sequential", fake_apply_sequential)
+    client.post("/api/fps/apply", json={"checked": ["A.1"]})
+    assert client.get("/api/fps/undo/available").json()["available"] is True
+
+    monkeypatch.setattr(
+        ps_bridge,
+        "undo_sequential",
+        lambda records: iter([UndoItemResult(Id="A.1", Success=True)]),
+    )
+    resp = client.post("/api/fps/undo")
+    assert resp.status_code == 200
+
+    # Retired: renamed off the UndoLog_*.json glob, not deleted (kept as a
+    # historical record) -- and "available" flips back to false so the same
+    # run can't be replayed a second time.
+    assert not list((tmp_path / "fps").glob("UndoLog_*.json"))
+    assert list((tmp_path / "fps").glob("ConsumedUndoLog_*.json"))
+    assert client.get("/api/fps/undo/available").json()["available"] is False
+
+
+def test_undo_keeps_log_on_partial_failure(client, monkeypatch, tmp_path):
+    scanned = [ScanResult(Id="A.1", Name="Item A", Status="PENDING", Current="off", Target="on")]
+    monkeypatch.setattr(ps_bridge, "scan_catalog", lambda items, checked: scanned)
+    client.post("/api/fps/scan", json={"checked": ["A.1"]})
+
+    monkeypatch.setattr(ps_bridge, "check_game_running", lambda: {"GameRunning": False, "Names": None})
+    monkeypatch.setattr(ps_bridge, "create_restore_point", lambda desc: {"Success": True, "Note": None})
+
+    def fake_apply_sequential(items_by_id, checked_ids):
+        yield ApplyItemResult(Id="A.1", Success=True, PreviouslyExisted=True, PreviousValue=1)
+
+    monkeypatch.setattr(ps_bridge, "apply_sequential", fake_apply_sequential)
+    client.post("/api/fps/apply", json={"checked": ["A.1"]})
+
+    monkeypatch.setattr(
+        ps_bridge,
+        "undo_sequential",
+        lambda records: iter([UndoItemResult(Id="A.1", Success=False, Error="denied")]),
+    )
+    client.post("/api/fps/undo")
+
+    # NOT retired: a failed undo must stay available so the user can retry
+    # via the same button instead of losing the ability to finish it.
+    assert list((tmp_path / "fps").glob("UndoLog_*.json"))
+    assert client.get("/api/fps/undo/available").json()["available"] is True
 
 
 def test_scan_pc_post_then_get(client):

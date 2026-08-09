@@ -252,7 +252,11 @@ def check_game_running(timeout: float = 10.0) -> dict:
     Reuses the existing Test-GameRunningTracked function via -Command
     instead of adding a new headless .ps1 file for one function call.
     """
-    checks_path = paths.SHARED_DIR / "PrimeChecks.ps1"
+    # A single quote anywhere in the path (e.g. a Windows username like
+    # O'Brien) would otherwise close the PowerShell string early and break
+    # dot-sourcing — escaped the same way create_restore_point already
+    # escapes its description below.
+    checks_path = str(paths.SHARED_DIR / "PrimeChecks.ps1").replace("'", "''")
     command = (
         "try { [Console]::OutputEncoding = [System.Text.Encoding]::UTF8 } catch {}; "
         f". '{checks_path}'; Test-GameRunningTracked | ConvertTo-Json -Compress"

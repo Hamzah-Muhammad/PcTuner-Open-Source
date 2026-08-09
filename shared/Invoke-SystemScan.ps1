@@ -22,6 +22,12 @@ $ScriptDir = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent ([Di
 # ---------- PC specs (kept self-contained here rather than dot-sourcing a
 # shared helper file, so this stays a standalone, independently-invokable
 # script) ----------
+function Test-CurrentProcessElevated {
+    $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
+    $principal = New-Object Security.Principal.WindowsPrincipal($identity)
+    $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+}
+
 function Get-ScanPCSpecs {
     $cpu  = Get-CimInstance Win32_Processor | Select-Object -First 1
     $gpu  = Get-CimInstance Win32_VideoController |
@@ -43,6 +49,7 @@ function Get-ScanPCSpecs {
         OS    = '{0} (build {1})' -f $os.Caption.Trim(), $os.BuildNumber
         Disks = $disks -join ' · '
         NIC   = if ($nic) { '{0} ({1})' -f $nic.InterfaceDescription, $nic.LinkSpeed } else { 'none up' }
+        Elevated = (Test-CurrentProcessElevated)
     }
 }
 

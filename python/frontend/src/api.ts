@@ -62,6 +62,12 @@ export interface UndoItemResult {
   Error: string | null;
 }
 
+export interface ApplyRunResult {
+  Results: ApplyItemResult[];
+  RestorePointOk: boolean;
+  RestorePointNote: string | null;
+}
+
 export interface InstalledSoftwareItem {
   Name: string;
   Version: string;
@@ -131,12 +137,14 @@ export const api = {
       `/api/${tool}/report/latest`,
     ),
   apply: (tool: ToolKey, checked: string[]) =>
-    request<ApplyItemResult[]>(`/api/${tool}/apply`, {
+    request<ApplyRunResult>(`/api/${tool}/apply`, {
       method: "POST",
       body: JSON.stringify({ checked }),
     }),
   undoAvailable: (tool: ToolKey) =>
-    request<{ available: boolean }>(`/api/${tool}/undo/available`),
+    request<{ available: boolean; ageSeconds: number | null }>(
+      `/api/${tool}/undo/available`,
+    ),
   undo: (tool: ToolKey) =>
     request<UndoItemResult[]>(`/api/${tool}/undo`, { method: "POST" }),
   scanPc: () => request<SystemInventory>("/api/scan-pc", { method: "POST" }),

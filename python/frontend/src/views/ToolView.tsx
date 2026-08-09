@@ -34,8 +34,9 @@ const TOOL_CONFIG: Record<ToolKey, ToolConfig> = {
     headingPlain: "FPS ",
     headingAccent: "Optimizer",
     subtitle:
-      "Scanned automatically against your system — green means already applied. Uncheck anything you don't want. Nothing is changed in dry-run mode.",
-    footerNote: "FPS Optimizer v0.3 · dry run — no changes applied",
+      "Press Scan to check this PC against 54 known optimizations — green means already applied. Uncheck anything you don't want, then Apply when ready: every change is logged and can be undone.",
+    footerNote:
+      "FPS Optimizer v0.3 · every applied change is logged and reversible",
     levelMeta: {
       1: { title: "LEVEL 1 · SAFE", color: "var(--green)" },
       2: { title: "LEVEL 2 · DEBLOAT", color: "var(--gold-a)" },
@@ -48,8 +49,9 @@ const TOOL_CONFIG: Record<ToolKey, ToolConfig> = {
     headingPlain: "Startup ",
     headingAccent: "Optimizer",
     subtitle:
-      "Every app, task, and Windows extra that launches itself at logon on this PC. Green means already clean. Unchecked rows are recommended keeps. Nothing is changed in dry-run mode.",
-    footerNote: "Startup Optimizer v0.1 · dry run — no changes applied",
+      "Press Scan to see every app, task, and Windows extra that launches itself at logon on this PC. Green means already clean. Unchecked rows are recommended keeps. Apply makes real changes — each one is logged and can be undone.",
+    footerNote:
+      "Startup Optimizer v0.1 · every applied change is logged and reversible",
     levelMeta: {
       1: { title: "STARTUP APPS", color: "var(--green)" },
       2: { title: "LOGON TASKS", color: "var(--gold-a)" },
@@ -57,6 +59,18 @@ const TOOL_CONFIG: Record<ToolKey, ToolConfig> = {
     },
   },
 };
+
+function formatAge(seconds: number): string {
+  if (seconds < 60) return "less than a minute ago";
+  const minutes = Math.round(seconds / 60);
+  if (minutes < 60) return `${minutes} minute${minutes === 1 ? "" : "s"} ago`;
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) return `${hours} hour${hours === 1 ? "" : "s"} ago`;
+  const days = Math.round(hours / 24);
+  return `${days} day${days === 1 ? "" : "s"} ago`;
+}
+
+const UNDO_STALE_AFTER_SECONDS = 24 * 60 * 60;
 
 interface ToolViewProps {
   tool: ToolKey;
@@ -82,6 +96,7 @@ export function ToolView({ tool, specs, onBack }: ToolViewProps) {
   const [applying, setApplying] = useState(false);
   const [undoing, setUndoing] = useState(false);
   const [undoAvailable, setUndoAvailable] = useState(false);
+  const [undoAgeSeconds, setUndoAgeSeconds] = useState<number | null>(null);
   const [showApplyModal, setShowApplyModal] = useState(false);
   const [showUndoModal, setShowUndoModal] = useState(false);
   // Per-item Apply/Undo failures, surfaced explicitly — without this, a
@@ -133,8 +148,9 @@ export function ToolView({ tool, specs, onBack }: ToolViewProps) {
 
   const refreshUndoAvailable = useCallback(async () => {
     try {
-      const { available } = await api.undoAvailable(tool);
+      const { available, ageSeconds } = await api.undoAvailable(tool);
       setUndoAvailable(available);
+      setUndoAgeSeconds(ageSeconds);
     } catch {
       // Non-critical — leave whatever the button already shows rather than
       // surface a status-text error for a background availability check.
@@ -190,7 +206,8 @@ export function ToolView({ tool, specs, onBack }: ToolViewProps) {
       const l3 = new Set(catalog.filter((i) => i.Level === 3).map((i) => i.Id));
       return new Set([...prev].filter((id) => !l3.has(id)));
     });
-  const openReport = () => window.open(`/api/${tool}/report/latest`, "_blank");
+  const openReport = () =>
+    window.open(`/api/${tool}/report/latest.md`, "_blank");
 
   // Eligibility is derived, never trusted as-is by the server (§8.5) — this
   // is purely so the confirmation modal can tell the user an accurate count
@@ -219,16 +236,28 @@ export function ToolView({ tool, specs, onBack }: ToolViewProps) {
       `Applying ${eligibleIds.length} change${eligibleIds.length === 1 ? "" : "s"}…`,
     );
     try {
-      const results = await api.apply(tool, eligibleIds);
+      const {
+        Results: results,
+        RestorePointOk,
+        RestorePointNote,
+      } = await api.apply(tool, eligibleIds);
       const failed = results.filter((r) => !r.Success);
-      if (failed.length) {
-        setItemErrors(
-          failed.map((r) => ({
-            Id: r.Id,
-            message: r.Error || r.Note || "failed",
-          })),
-        );
+      const errors = failed.map((r) => ({
+        Id: r.Id,
+        message: r.Error || r.Note || "failed",
+      }));
+      if (!RestorePointOk) {
+        // Not a per-item failure — the confirm modal promised a restore
+        // point would be created first, so a silent failure here would be
+        // a broken promise, not a harmless one. The undo log is unaffected.
+        errors.push({
+          Id: "Restore Point",
+          message:
+            RestorePointNote ||
+            "could not be created — the undo log below is still intact",
+        });
       }
+      if (errors.length) setItemErrors(errors);
       // Re-scan rather than hand-reconcile apply results into `results` —
       // the scan is the actual source of truth for current system state,
       // and this reuses the exact same rendering path a manual re-scan does.
@@ -296,8 +325,8 @@ export function ToolView({ tool, specs, onBack }: ToolViewProps) {
       {itemErrors.length > 0 && (
         <div className={styles.itemErrors}>
           <div className={styles.itemErrorsTitle}>
-            {itemErrors.length} item{itemErrors.length === 1 ? "" : "s"} failed
-            — they were left unchanged, not silently skipped:
+            {itemErrors.length} thing{itemErrors.length === 1 ? "" : "s"} worth
+            knowing — nothing here was silently hidden:
           </div>
           <ul className={styles.itemErrorsList}>
             {itemErrors.map((e) => (
@@ -367,7 +396,17 @@ export function ToolView({ tool, specs, onBack }: ToolViewProps) {
       {showUndoModal && (
         <ConfirmModal
           title="Undo last apply?"
-          message="This reverts every change from the most recent apply run for this tool back to its previous value. There's no per-item undo — it's all or nothing."
+          message={
+            `This reverts every change from the most recent apply run for this tool back to its ` +
+            `previous value${undoAgeSeconds != null ? ` (applied ${formatAge(undoAgeSeconds)})` : ""}. ` +
+            "There's no per-item undo — it's all or nothing."
+          }
+          callout={
+            undoAgeSeconds != null && undoAgeSeconds > UNDO_STALE_AFTER_SECONDS
+              ? `That apply run was ${formatAge(undoAgeSeconds)} — a lot may have changed on this PC ` +
+                "since then. Make sure this is still what you want to revert."
+              : undefined
+          }
           confirmLabel="Undo"
           busyLabel="Undoing…"
           onConfirm={confirmUndo}
