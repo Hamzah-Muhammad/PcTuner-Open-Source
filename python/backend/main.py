@@ -69,7 +69,7 @@ async def lifespan(app: FastAPI):
     yield
 
 
-app = FastAPI(title="PcTuner-Open-Source", lifespan=lifespan)
+app = FastAPI(title="PCTuner", lifespan=lifespan)
 
 
 def _require_tool(tool: str) -> None:
@@ -155,7 +155,7 @@ def post_apply(tool: str, req: ApplyRequest):
             raise HTTPException(409, f"a game is running ({game.get('Names')}) — apply refused")
 
         try:
-            ps_bridge.create_restore_point(f"PcTuner-Open-Source apply — {TOOL_META[tool].Name}")
+            ps_bridge.create_restore_point(f"PCTuner apply — {TOOL_META[tool].Name}")
         except ps_bridge.PSBridgeError:
             pass  # coarse safety net only; the undo log is the real one (§8.5)
 

@@ -54,19 +54,19 @@
 }
 
 .input:hover ~ .box {
-  border-color: var(--green-hi);
+  border-color: var(--red-hi);
 }
 
 /* Keyboard focus ring, drawn on the visible box since the input itself is
  * transparent. Matches theme.css's global :focus-visible treatment. */
 .input:focus-visible ~ .box {
-  outline: 2px solid var(--green);
+  outline: 2px solid var(--red);
   outline-offset: 2px;
 }
 
 .input:checked ~ .box {
-  background: var(--green);
-  border-color: var(--green);
+  background: var(--red);
+  border-color: var(--red);
 }
 
 .input:checked ~ .box .mark {

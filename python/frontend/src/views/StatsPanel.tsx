@@ -8,11 +8,13 @@ export interface ScanCounts {
   errors: number;
 }
 
+// True monochrome except errors (red/black rebrand, 2026-08-09) — matches
+// StatusPill's scheme so the summary chips and per-row pills read the same way.
 const STAT_DEFS: { key: keyof ScanCounts; label: string; color: string }[] = [
-  { key: "applied", label: "APPLIED", color: "var(--green)" },
-  { key: "pending", label: "PENDING", color: "var(--gold-a)" },
+  { key: "applied", label: "APPLIED", color: "var(--text)" },
+  { key: "pending", label: "PENDING", color: "var(--muted)" },
   { key: "review", label: "REVIEW", color: "var(--muted)" },
-  { key: "skipped", label: "SKIPPED", color: "var(--muted)" },
+  { key: "skipped", label: "SKIPPED", color: "var(--muted-dim)" },
   { key: "errors", label: "ERRORS", color: "var(--red)" },
 ];
 

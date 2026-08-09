@@ -31,6 +31,6 @@
   height: 13px;
   border-radius: 50%;
   border: 2px solid var(--border);
-  border-top-color: var(--green);
+  border-top-color: var(--red);
   animation: prime-spin 0.7s linear infinite;
 }

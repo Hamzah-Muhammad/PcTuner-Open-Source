@@ -30,30 +30,30 @@ interface ToolConfig {
 const TOOL_CONFIG: Record<ToolKey, ToolConfig> = {
   fps: {
     title: "FPS Optimizer",
-    eyebrow: "P R I M E P C T U N E R   ·   F O R  G A M I N G  R I G S",
+    eyebrow: "P C T U N E R   ·   F O R  G A M I N G  R I G S",
     headingPlain: "FPS ",
     headingAccent: "Optimizer",
     subtitle:
       "Scanned automatically against your system — green means already applied. Uncheck anything you don't want. Nothing is changed in dry-run mode.",
     footerNote: "FPS Optimizer v0.3 · dry run — no changes applied",
     levelMeta: {
-      1: { title: "LEVEL 1 · SAFE", color: "var(--green)" },
-      2: { title: "LEVEL 2 · DEBLOAT", color: "var(--gold-a)" },
-      3: { title: "LEVEL 3 · AGGRESSIVE", color: "var(--gold-b)" },
+      1: { title: "LEVEL 1 · SAFE", color: "var(--muted)" },
+      2: { title: "LEVEL 2 · DEBLOAT", color: "var(--red)" },
+      3: { title: "LEVEL 3 · AGGRESSIVE", color: "var(--red-hi)" },
     },
   },
   startup: {
     title: "Startup Optimizer",
-    eyebrow: "P R I M E P C T U N E R   ·   F O R  E V E R Y D A Y  P C s",
+    eyebrow: "P C T U N E R   ·   F O R  E V E R Y D A Y  P C s",
     headingPlain: "Startup ",
     headingAccent: "Optimizer",
     subtitle:
       "Every app, task, and Windows extra that launches itself at logon on this PC. Green means already clean. Unchecked rows are recommended keeps. Nothing is changed in dry-run mode.",
     footerNote: "Startup Optimizer v0.1 · dry run — no changes applied",
     levelMeta: {
-      1: { title: "STARTUP APPS", color: "var(--green)" },
-      2: { title: "LOGON TASKS", color: "var(--gold-a)" },
-      3: { title: "WINDOWS EXTRAS", color: "var(--gold-b)" },
+      1: { title: "STARTUP APPS", color: "var(--muted)" },
+      2: { title: "LOGON TASKS", color: "var(--red)" },
+      3: { title: "WINDOWS EXTRAS", color: "var(--red-hi)" },
     },
   },
 };

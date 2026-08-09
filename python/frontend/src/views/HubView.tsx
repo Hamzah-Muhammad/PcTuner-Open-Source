@@ -35,9 +35,9 @@ export function HubView({
     <div className={styles.page}>
       <Topbar healthWarning={healthWarning} />
       <PageHeading
-        eyebrow="P C T U N E R  ·  O P E N  S O U R C E"
-        headingPlain="PcTuner"
-        headingAccent="Open Source"
+        eyebrow="P C T U N E R"
+        headingPlain="PC"
+        headingAccent="Tuner"
         subtitle="Pick the tool that fits this PC — every tool shows you each change as a checkbox before anything happens. Press Scan PC to detect your system."
         size="lg"
       />
@@ -82,13 +82,7 @@ export function HubView({
         </>
       )}
 
-      <Footer
-        note={
-          version
-            ? `PcTuner-Open-Source hub v${version}`
-            : "PcTuner-Open-Source hub"
-        }
-      />
+      <Footer note={version ? `PCTuner hub v${version}` : "PCTuner hub"} />
     </div>
   );
 }

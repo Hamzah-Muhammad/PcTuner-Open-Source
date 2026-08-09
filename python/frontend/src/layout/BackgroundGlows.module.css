@@ -15,7 +15,7 @@
   height: 760px;
   background: radial-gradient(
     ellipse at center,
-    color-mix(in srgb, var(--green) 18%, transparent) 0%,
+    color-mix(in srgb, var(--red) 18%, transparent) 0%,
     transparent 70%
   );
 }
@@ -28,7 +28,7 @@
   height: 640px;
   background: radial-gradient(
     ellipse at center,
-    color-mix(in srgb, var(--gold-b) 13%, transparent) 0%,
+    color-mix(in srgb, var(--red) 10%, transparent) 0%,
     transparent 70%
   );
 }
