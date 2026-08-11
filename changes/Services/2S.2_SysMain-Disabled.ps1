@@ -1,4 +1,4 @@
-# 2S.2 — SysMain -> Disabled. Services sector.
+﻿# 2S.2 — SysMain -> Disabled. Services sector.
 # Superfetch/prefetch — no benefit on SSD-only systems.
 param([switch]$Check, [switch]$Apply, [switch]$Undo, [string]$PreviousValueJson)
 $ScriptDir = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent ([Diagnostics.Process]::GetCurrentProcess().MainModule.FileName) }

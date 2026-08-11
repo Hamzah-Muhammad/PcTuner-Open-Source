@@ -2,7 +2,7 @@ import type { CatalogItem, ScanResult } from "../api";
 import { Card } from "../primitives/Card";
 import { Checkbox } from "../primitives/Checkbox";
 import { StatusPill, type PillStatus } from "../primitives/StatusPill";
-import "./ChecklistRow.css";
+import styles from "./ChecklistRow.module.css";
 
 interface ChecklistRowProps {
   item: CatalogItem;
@@ -20,24 +20,22 @@ export function ChecklistRow({
   result,
   scanning,
 }: ChecklistRowProps) {
-  const status: PillStatus = scanning
-    ? "SCANNING"
-    : (result?.Status ?? "IDLE");
+  const status: PillStatus = scanning ? "SCANNING" : (result?.Status ?? "IDLE");
   const detail = scanning ? undefined : result?.Current;
 
   return (
     <Card>
-      <div className="row">
-        <span className="check">
+      <div className={styles.row}>
+        <span className={styles.check}>
           <Checkbox checked={checked} onChange={onToggle} label={item.Name} />
         </span>
-        <span className="idPill">{item.Id}</span>
-        <div className="texts">
-          <div className="name">{item.Name}</div>
-          <div className="desc">{item.Desc}</div>
-          <div className="target">target: {item.Target}</div>
+        <span className={styles.idPill}>{item.Id}</span>
+        <div className={styles.texts}>
+          <div className={styles.name}>{item.Name}</div>
+          <div className={styles.desc}>{item.Desc}</div>
+          <div className={styles.target}>target: {item.Target}</div>
         </div>
-        <div className="statusCol">
+        <div className={styles.statusCol}>
           <StatusPill status={status} detail={detail} />
         </div>
       </div>

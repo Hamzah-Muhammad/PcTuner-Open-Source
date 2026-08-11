@@ -1,4 +1,4 @@
-# 3.2 — VBS / Memory Integrity / Hyper-V OFF (Level 3, Security Trade-off). Windows Changes sector.
+﻿# 3.2 — VBS / Memory Integrity / Hyper-V OFF (Level 3, Security Trade-off). Windows Changes sector.
 # TRADE-OFF: several % FPS for losing HVCI, Credential Guard, WSL2, Hyper-V,
 # Windows Sandbox. Needs a reboot to fully take effect. Guard: Apply REFUSES
 # if WSL2/Docker is detected (no interactive prompt available headless, so
@@ -40,7 +40,11 @@ Invoke-PrimeChange -Id '3.2' -Check:$Check -Apply:$Apply -Undo:$Undo -PreviousVa
         param($Prev)
         if (-not $Prev.PreviouslyExisted) { return New-TrackedResult -Success $true -Note 'apply was refused — nothing to undo' }
         $inner = $Prev.PreviousValue | ConvertFrom-Json
-        Undo-RegValueTracked $HvciPath $HvciName $inner.Reg.PreviouslyExisted $inner.Reg.PreviousValue
+        # Captured, not left as bare pipeline output — unsuppressed, this
+        # object becomes a SECOND item in the block's result alongside the
+        # final New-TrackedResult below, turning the JSON into a 2-element
+        # array instead of the single object PrimeHeadless/Pydantic expect.
+        Undo-RegValueTracked $HvciPath $HvciName $inner.Reg.PreviouslyExisted $inner.Reg.PreviousValue | Out-Null
         bcdedit /set hypervisorlaunchtype auto | Out-Null
         New-TrackedResult -Success $true -Note 'reboot required for hypervisorlaunchtype change to take effect'
     }

@@ -1,4 +1,4 @@
-# X.1 — Purge inert StartupApproved leftovers. Windows Changes sector.
+﻿# X.1 — Purge inert StartupApproved leftovers. Windows Changes sector.
 # Old enable/disable toggle entries whose actual startup entry is long gone —
 # registry clutter from uninstalled apps.
 param([switch]$Check, [switch]$Apply, [switch]$Undo, [string]$PreviousValueJson)
@@ -47,6 +47,23 @@ Invoke-PrimeChange -Id 'X.1' -Check:$Check -Apply:$Apply -Undo:$Undo -PreviousVa
         param($Prev)
         if (-not $Prev.PreviouslyExisted) { return New-TrackedResult -Success $true -Note 'nothing was purged at apply time' }
         $inner = @($Prev.PreviousValue | ConvertFrom-Json)
-        foreach ($o in $inner) { Set-ItemProperty -Path $o.Path -Name $o.Name -Value $o.Value -Type Binary -ErrorAction SilentlyContinue }
-        New-TrackedResult -Success $true
+        $failures = [System.Collections.Generic.List[string]]::new()
+        foreach ($o in $inner) {
+            try {
+                # StartupApproved values are REG_BINARY. JSON round-trips a
+                # byte[] as an array of numbers, and ConvertFrom-Json hands
+                # that back as Int32/Int64 — Set-ItemProperty -Type Binary
+                # rejects that type mismatch, and the old -ErrorAction
+                # SilentlyContinue swallowed the failure, so the "restore"
+                # silently did nothing while still reporting success. Cast
+                # back to a real byte[] first, and let a genuine remaining
+                # failure surface per-item instead of being hidden.
+                $bytes = [byte[]]$o.Value
+                Set-ItemProperty -Path $o.Path -Name $o.Name -Value $bytes -Type Binary -ErrorAction Stop
+            } catch {
+                $failures.Add("$($o.Name): $($_.Exception.Message)")
+            }
+        }
+        $note = if ($failures.Count) { "partially restored — failed: " + ($failures -join '; ') } else { $null }
+        New-TrackedResult -Success ($failures.Count -eq 0) -Note $note
     }

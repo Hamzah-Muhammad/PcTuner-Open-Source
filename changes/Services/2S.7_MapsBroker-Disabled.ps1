@@ -1,4 +1,4 @@
-# 2S.7 — MapsBroker -> Disabled. Services sector.
+﻿# 2S.7 — MapsBroker -> Disabled. Services sector.
 # Offline maps sync.
 param([switch]$Check, [switch]$Apply, [switch]$Undo, [string]$PreviousValueJson)
 $ScriptDir = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent ([Diagnostics.Process]::GetCurrentProcess().MainModule.FileName) }

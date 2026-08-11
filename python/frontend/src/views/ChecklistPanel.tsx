@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import type { CatalogItem, ScanResult } from "../api";
 import { LevelGroup } from "./LevelGroup";
-import "./ChecklistPanel.css";
+import styles from "./ChecklistPanel.module.css";
 
 export interface LevelMeta {
   title: string;
@@ -47,22 +47,29 @@ export function ChecklistPanel({
   }, [items]);
 
   return (
-    <div className="panel">
+    <div className={styles.panel}>
       {scanning && (
-        <div className="overlay">
-          <span className="spinner" />
+        <div className={styles.overlay}>
+          <span className={styles.spinner} />
           Scanning… up to ~2 min
         </div>
       )}
-      {groups.map((g) => {
+      {groups.map((g, i) => {
         const meta = levelMeta[g.level] ?? {
           title: `LEVEL ${g.level}`,
           color: "var(--muted)",
         };
+        // Only show the level title where the level actually changes from
+        // the previous group — Startup Optimizer has two modules sharing
+        // Level 1 ("Registry Run Entries", "Startup Folder Shortcuts"),
+        // which otherwise renders as two consecutive groups with the exact
+        // same "STARTUP APPS" label, reading like an accidental repeat
+        // rather than two distinct sections.
+        const showLevelTitle = i === 0 || groups[i - 1].level !== g.level;
         return (
           <LevelGroup
             key={`${g.level}|${g.module}`}
-            levelTitle={meta.title}
+            levelTitle={showLevelTitle ? meta.title : null}
             levelColor={meta.color}
             module={g.module}
             items={g.items}

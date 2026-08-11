@@ -1,15 +1,13 @@
 import type { MouseEvent, ReactNode } from "react";
 import { Button } from "./Button";
 import { Card } from "./Card";
-import "./ConfirmModal.css";
+import styles from "./ConfirmModal.module.css";
 
 interface ConfirmModalProps {
   title: string;
   message: ReactNode;
   callout?: ReactNode;
   confirmLabel: string;
-  busy?: boolean;
-  busyLabel?: string;
   onConfirm: () => void;
   onCancel: () => void;
 }
@@ -23,26 +21,22 @@ export function ConfirmModal({
   message,
   callout,
   confirmLabel,
-  busy,
-  busyLabel,
   onConfirm,
   onCancel,
 }: ConfirmModalProps) {
   return (
-    <div className="modalOverlay" onClick={onCancel}>
+    <div className={styles.modalOverlay} onClick={onCancel}>
       <Card
-        className="modalCard"
+        className={styles.modalCard}
         onClick={(e: MouseEvent) => e.stopPropagation()}
       >
-        <h3 className="modalTitle">{title}</h3>
-        <div className="modalMessage">{message}</div>
-        {callout && <div className="modalCallout">{callout}</div>}
-        <div className="modalActions">
-          <Button onClick={onCancel} disabled={busy}>
-            Cancel
-          </Button>
-          <Button variant="danger" onClick={onConfirm} disabled={busy}>
-            {busy ? (busyLabel ?? "Working…") : confirmLabel}
+        <h3 className={styles.modalTitle}>{title}</h3>
+        <div className={styles.modalMessage}>{message}</div>
+        {callout && <div className={styles.modalCallout}>{callout}</div>}
+        <div className={styles.modalActions}>
+          <Button onClick={onCancel}>Cancel</Button>
+          <Button variant="danger" onClick={onConfirm}>
+            {confirmLabel}
           </Button>
         </div>
       </Card>

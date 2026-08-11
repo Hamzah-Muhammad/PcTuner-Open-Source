@@ -1,4 +1,4 @@
-# 2S.13 — DusmSvc -> Disabled. Services sector.
+﻿# 2S.13 — DusmSvc -> Disabled. Services sector.
 # Data usage metering.
 param([switch]$Check, [switch]$Apply, [switch]$Undo, [string]$PreviousValueJson)
 $ScriptDir = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent ([Diagnostics.Process]::GetCurrentProcess().MainModule.FileName) }

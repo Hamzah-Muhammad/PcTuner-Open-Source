@@ -105,7 +105,13 @@ def _run_json(args: list[str], *, item_id: str | None, timeout: float) -> dict |
 def _change_script_args(item: CatalogItem, mode: str, previous_value_json: str | None) -> list[str]:
     args = ["-File", item.ScriptPath, f"-{mode}"]
     for key, value in item.ScriptArgs.items():
-        args += [f"-{key}", str(value)]
+        # `-Key`, `value` as two separate argv tokens lets PowerShell's own
+        # parameter binder misread a value that itself starts with `-`
+        # (e.g. a real registry value name like "-Undo") as the START OF A
+        # NEW PARAMETER rather than this one's value — "Missing an argument
+        # for parameter 'ValueName'". `-Key:value` is a single token and is
+        # unambiguous no matter what the value looks like.
+        args.append(f"-{key}:{value}")
     if mode == "Undo" and previous_value_json:
         args += ["-PreviousValueJson", previous_value_json]
     return args
@@ -168,6 +174,21 @@ def scan_catalog(items: list[CatalogItem], checked_ids: set[str]) -> list[ScanRe
                         Current=e.message,
                         Target=item.Target,
                     )
+                except (KeyError, TypeError) as e:
+                    # obj["Status"]/obj["Current"] above only guard against
+                    # PSBridgeError (non-zero exit, unparsable JSON) — a
+                    # script that exits 0 with VALID but wrong-shaped JSON
+                    # (missing a key, or a list instead of an object) would
+                    # otherwise raise here uncaught and take the entire scan
+                    # down with it, losing every other item's already-good
+                    # result along with it. Scoped to this one item instead.
+                    results[item.Id] = ScanResult(
+                        Id=item.Id,
+                        Name=item.Name,
+                        Status="ERROR",
+                        Current=f"malformed check output: {e}",
+                        Target=item.Target,
+                    )
         except FutureTimeoutError:
             # Coarse circuit breaker (§5.5) — whatever didn't finish in the
             # overall window becomes a structured error, not a hang.
@@ -200,16 +221,39 @@ def apply_sequential(items_by_id: dict[str, CatalogItem], checked_ids: list[str]
             yield ApplyItemResult(Id=item_id, Success=False, Error=e.message)
 
 
-def undo_sequential(items_by_id: dict[str, CatalogItem], undo_records: list[dict]):
+def undo_sequential(undo_records: list[dict]):
     """`undo_records` are prior ApplyItemResult-shaped dicts (Id/PreviouslyExisted/
-    PreviousValue) from the most recent apply run's undo log — the exact shape
-    the PS UndoBlock's `$Prev` parameter expects.
+    PreviousValue/ScriptPath/ScriptArgs) from the most recent apply run's undo
+    log — the exact shape the PS UndoBlock's `$Prev` parameter expects.
+
+    Deliberately does NOT look the item back up in a freshly-loaded catalog:
+    ScriptPath/ScriptArgs are snapshotted at apply time (reports.UndoLog.record),
+    so Undo acts on exactly what Apply touched regardless of what the catalog
+    looks like now. This matters for Startup Optimizer, whose catalog is
+    re-enumerated live from the registry/task scheduler on every load — an
+    item that Apply just removed may no longer appear at all, or a stale
+    positional Id could otherwise resolve to a different, unrelated entry.
     """
     for record in undo_records:
-        item = items_by_id.get(record["Id"])
-        if item is None:
-            yield UndoItemResult(Id=record["Id"], Success=False, Error="item no longer in catalog")
+        script_path = record.get("ScriptPath")
+        if not script_path:
+            yield UndoItemResult(
+                Id=record["Id"],
+                Success=False,
+                Error="no script recorded for this item — apply log predates this format",
+            )
             continue
+        item = CatalogItem(
+            Id=record["Id"],
+            Level=0,
+            Module="",
+            Name="",
+            Desc="",
+            Target="",
+            DefaultChecked=False,
+            ScriptPath=script_path,
+            ScriptArgs=record.get("ScriptArgs") or {},
+        )
         prev_json = json.dumps(
             {
                 "PreviouslyExisted": record.get("PreviouslyExisted"),
@@ -229,7 +273,11 @@ def check_game_running(timeout: float = 10.0) -> dict:
     Reuses the existing Test-GameRunningTracked function via -Command
     instead of adding a new headless .ps1 file for one function call.
     """
-    checks_path = paths.SHARED_DIR / "PrimeChecks.ps1"
+    # A single quote anywhere in the path (e.g. a Windows username like
+    # O'Brien) would otherwise close the PowerShell string early and break
+    # dot-sourcing — escaped the same way create_restore_point already
+    # escapes its description below.
+    checks_path = str(paths.SHARED_DIR / "PrimeChecks.ps1").replace("'", "''")
     command = (
         "try { [Console]::OutputEncoding = [System.Text.Encoding]::UTF8 } catch {}; "
         f". '{checks_path}'; Test-GameRunningTracked | ConvertTo-Json -Compress"

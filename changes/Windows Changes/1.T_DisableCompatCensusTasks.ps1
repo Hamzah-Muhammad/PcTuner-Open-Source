@@ -1,4 +1,4 @@
-# 1.T — Disable 10 telemetry/compat-census scheduled tasks. Windows Changes sector.
+﻿# 1.T — Disable 10 telemetry/compat-census scheduled tasks. Windows Changes sector.
 # Skips TrustedInstaller-protected SdbinstMergeDbTask; never touches \Shell\CreateObjectTask.
 param([switch]$Check, [switch]$Apply, [switch]$Undo, [string]$PreviousValueJson)
 $ScriptDir = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent ([Diagnostics.Process]::GetCurrentProcess().MainModule.FileName) }
@@ -30,16 +30,33 @@ Invoke-PrimeChange -Id '1.T' -Check:$Check -Apply:$Apply -Undo:$Undo -PreviousVa
         else { [pscustomobject]@{ Current = "still enabled: $($enabled -join ', ')"; Compliant = $false } }
     } `
     -ApplyBlock {
-        $results = @{}
-        foreach ($t in $Targets) { $results[$t.N] = Disable-ScheduledTaskTracked $t.P $t.N }
-        New-TrackedResult -Success $true -PreviouslyExisted $true -PreviousValue ($results | ConvertTo-Json -Compress -Depth 4)
+        # One protected task (e.g. TrustedInstaller-owned) throwing here must
+        # not discard the tasks already disabled earlier in this same loop —
+        # $ErrorActionPreference is 'Stop' for this whole block, so without a
+        # per-target try/catch, sub-item #5 failing would abort before
+        # $results ever reaches New-TrackedResult, losing undo data for
+        # sub-items #1-4 that already changed for real.
+        $results = @{}; $failures = [System.Collections.Generic.List[string]]::new()
+        foreach ($t in $Targets) {
+            try { $results[$t.N] = Disable-ScheduledTaskTracked $t.P $t.N }
+            catch { $failures.Add("$($t.N): $($_.Exception.Message)") }
+        }
+        if (-not $results.Count) {
+            return New-TrackedResult -Success $false -Note ("all targets failed: " + ($failures -join '; '))
+        }
+        $note = if ($failures.Count) { "partially applied — failed: " + ($failures -join '; ') } else { $null }
+        New-TrackedResult -Success $true -PreviouslyExisted $true -PreviousValue ($results | ConvertTo-Json -Compress -Depth 4) -Note $note
     } `
     -UndoBlock {
         param($Prev)
         $inner = $Prev.PreviousValue | ConvertFrom-Json
+        $failures = [System.Collections.Generic.List[string]]::new()
         foreach ($t in $Targets) {
             $r = $inner.($t.N)
-            if ($r) { Undo-ScheduledTaskTracked $t.P $t.N $r.PreviouslyExisted $r.PreviousValue | Out-Null }
+            if (-not $r) { continue }
+            try { Undo-ScheduledTaskTracked $t.P $t.N $r.PreviouslyExisted $r.PreviousValue | Out-Null }
+            catch { $failures.Add("$($t.N): $($_.Exception.Message)") }
         }
-        New-TrackedResult -Success $true
+        $note = if ($failures.Count) { "partially undone — failed: " + ($failures -join '; ') } else { $null }
+        New-TrackedResult -Success ($failures.Count -eq 0) -Note $note
     }

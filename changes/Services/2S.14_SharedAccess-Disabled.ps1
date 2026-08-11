@@ -1,4 +1,4 @@
-# 2S.14 — SharedAccess -> Disabled. Services sector.
+﻿# 2S.14 — SharedAccess -> Disabled. Services sector.
 # Internet Connection Sharing. Guard: this item's Desc (manifest.json) warns
 # Mobile Hotspot/VPN sharing need it — no runtime prompt, see 2S.9's note.
 param([switch]$Check, [switch]$Apply, [switch]$Undo, [string]$PreviousValueJson)

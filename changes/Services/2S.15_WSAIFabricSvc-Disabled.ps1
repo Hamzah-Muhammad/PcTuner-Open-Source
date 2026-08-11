@@ -1,4 +1,4 @@
-# 2S.15 — WSAIFabricSvc -> Disabled. Services sector.
+﻿# 2S.15 — WSAIFabricSvc -> Disabled. Services sector.
 # Windows AI Fabric — no AI features on a gaming rig.
 param([switch]$Check, [switch]$Apply, [switch]$Undo, [string]$PreviousValueJson)
 $ScriptDir = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent ([Diagnostics.Process]::GetCurrentProcess().MainModule.FileName) }

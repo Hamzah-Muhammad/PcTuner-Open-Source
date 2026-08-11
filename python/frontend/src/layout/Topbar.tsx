@@ -1,4 +1,4 @@
-import "./Topbar.css";
+import styles from "./Topbar.module.css";
 
 interface TopbarProps {
   healthWarning?: string | null;
@@ -10,10 +10,10 @@ interface TopbarProps {
  * missing PowerShell host degrades visibly instead of silently. */
 export function Topbar({ healthWarning }: TopbarProps) {
   return (
-    <div className="topbar">
-      <span className="statusDot" />
-      <span className="handle">
-        <span className="at">@</span>
+    <div className={styles.topbar}>
+      <span className={styles.statusDot} />
+      <span className={styles.handle}>
+        <span className={styles.at}>@</span>
         <span>Humzeeny</span>
       </span>
       {healthWarning && (

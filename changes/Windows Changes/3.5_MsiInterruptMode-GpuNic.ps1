@@ -1,4 +1,4 @@
-# 3.5 — MSI interrupt mode for GPU + NIC (Level 3, Security Trade-off catalog — hardware tuning, low risk). Windows Changes sector.
+﻿# 3.5 — MSI interrupt mode for GPU + NIC (Level 3, Security Trade-off catalog — hardware tuning, low risk). Windows Changes sector.
 # Message-signaled interrupts = lower interrupt latency than legacy line-based.
 param([switch]$Check, [switch]$Apply, [switch]$Undo, [string]$PreviousValueJson)
 $ScriptDir = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent ([Diagnostics.Process]::GetCurrentProcess().MainModule.FileName) }
@@ -26,20 +26,31 @@ Invoke-PrimeChange -Id '3.5' -Check:$Check -Apply:$Apply -Undo:$Undo -PreviousVa
         [pscustomobject]@{ Current = $parts -join '; '; Compliant = $ok }
     } `
     -ApplyBlock {
-        $results = @{}
+        # Per-device try/catch: GPU throwing (e.g. driver holds the key open)
+        # must not discard the NIC's already-applied undo data, or vice versa.
+        $results = @{}; $failures = [System.Collections.Generic.List[string]]::new()
         foreach ($dev in Get-MsiDevices) {
             if (-not $dev.Pnp) { continue }
             $reg = "HKLM:\SYSTEM\CurrentControlSet\Enum\$($dev.Pnp)\Device Parameters\Interrupt Management\MessageSignaledInterruptProperties"
-            $results[$dev.Label] = @{ Reg = $reg; Result = (Set-RegValueTracked $reg 'MSISupported' 1) }
+            try { $results[$dev.Label] = @{ Reg = $reg; Result = (Set-RegValueTracked $reg 'MSISupported' 1) } }
+            catch { $failures.Add("$($dev.Label): $($_.Exception.Message)") }
         }
-        New-TrackedResult -Success $true -PreviouslyExisted $true -PreviousValue ($results | ConvertTo-Json -Compress -Depth 5)
+        if (-not $results.Count) {
+            return New-TrackedResult -Success $false -Note ("all devices failed: " + ($failures -join '; '))
+        }
+        $note = if ($failures.Count) { "partially applied — failed: " + ($failures -join '; ') } else { $null }
+        New-TrackedResult -Success $true -PreviouslyExisted $true -PreviousValue ($results | ConvertTo-Json -Compress -Depth 5) -Note $note
     } `
     -UndoBlock {
         param($Prev)
         $inner = $Prev.PreviousValue | ConvertFrom-Json
+        $failures = [System.Collections.Generic.List[string]]::new()
         foreach ($label in $inner.PSObject.Properties.Name) {
             $d = $inner.$label
-            Undo-RegValueTracked $d.Reg 'MSISupported' $d.Result.PreviouslyExisted $d.Result.PreviousValue | Out-Null
+            try { Undo-RegValueTracked $d.Reg 'MSISupported' $d.Result.PreviouslyExisted $d.Result.PreviousValue | Out-Null }
+            catch { $failures.Add("$($label): $($_.Exception.Message)") }
         }
-        New-TrackedResult -Success $true -Note 'device reset (~2s) applies the change — never run mid-game'
+        $note = 'device reset (~2s) applies the change — never run mid-game'
+        if ($failures.Count) { $note += ' — partially undone, failed: ' + ($failures -join '; ') }
+        New-TrackedResult -Success ($failures.Count -eq 0) -Note $note
     }

@@ -1,4 +1,4 @@
-# 2S.11 — Spooler -> Disabled (printer-guarded). Services sector.
+﻿# 2S.11 — Spooler -> Disabled (printer-guarded). Services sector.
 # Print spooler. Auto-guard: skipped entirely if a real printer is installed.
 param([switch]$Check, [switch]$Apply, [switch]$Undo, [string]$PreviousValueJson)
 $ScriptDir = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent ([Diagnostics.Process]::GetCurrentProcess().MainModule.FileName) }

@@ -1,4 +1,4 @@
-# 2S.16 — LanmanServer -> Disabled. Services sector.
+﻿# 2S.16 — LanmanServer -> Disabled. Services sector.
 # SMB share HOSTING. Guard: this item's Desc (manifest.json) warns it breaks
 # sharing folders to other devices (NAS client access unaffected) — no
 # runtime prompt, see 2S.9's note.

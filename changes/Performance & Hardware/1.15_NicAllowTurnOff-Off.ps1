@@ -1,4 +1,4 @@
-# 1.15 — "Allow computer to turn off this device" off (NIC). Performance & Hardware sector.
+﻿# 1.15 — "Allow computer to turn off this device" off (NIC). Performance & Hardware sector.
 # OS-initiated NIC power-down causes stutter. Applied via the
 # MSPower_DeviceEnable CIM method (root\WMI) — the only one that reliably
 # works; verified via Get-NetAdapterPowerManagement, never via a CIM re-read

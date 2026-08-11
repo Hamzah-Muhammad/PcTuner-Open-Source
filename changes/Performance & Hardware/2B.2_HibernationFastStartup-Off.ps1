@@ -1,4 +1,4 @@
-# 2B.2 — Hibernation + Fast Startup off. Performance & Hardware sector.
+﻿# 2B.2 — Hibernation + Fast Startup off. Performance & Hardware sector.
 # Frees hiberfil.sys (GBs) and avoids stale-driver Fast Startup states.
 # Note: this item's Desc (manifest.json) flags a laptop-caution warning —
 # no runtime prompt here, see Services\2S.9's note on headless prompting.

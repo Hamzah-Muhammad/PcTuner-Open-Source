@@ -1,4 +1,4 @@
-# 1.14 — NIC power-saving property cluster off. Performance & Hardware sector.
+﻿# 1.14 — NIC power-saving property cluster off. Performance & Hardware sector.
 # Energy-Efficient Ethernet / Green Ethernet / Power Saving Mode / Gigabit
 # Lite / Wake-on-pattern cause micro-stutter and latency spikes. Only
 # properties that exist on your adapter are touched. Applying resets the

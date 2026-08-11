@@ -1,4 +1,4 @@
-# 3.4 — Defender exclusions for game folders (review). Windows Changes sector.
+﻿# 3.4 — Defender exclusions for game folders (review). Windows Changes sector.
 # Human-review item — Apply is deliberately not implemented (which folders to
 # exclude is a per-item human choice, not automatable). HARD RULE reflected
 # in the check itself: flags (never silently accepts) Temp/profile-root/
@@ -21,6 +21,13 @@ Invoke-PrimeChange -Id '3.4' -Check:$Check -Apply:$Apply -Undo:$Undo -PreviousVa
             }
         }
         $cur = "$($excl.Count) exclusions; Steam libraries: $(if ($libs.Count) { $libs -join ', ' } else { 'none detected' })"
-        if ($danger.Count) { return [pscustomobject]@{ Current = "$cur — DANGEROUS exclusion present: $($danger -join ', ')"; Compliant = $false } }
+        # Compliant is NEVER $false here, even in the dangerous case — that
+        # would map to PENDING (apply-eligible), but this item has no
+        # ApplyBlock by design (see header). $false briefly existed on this
+        # line and meant a checked+PENDING dangerous-exclusion row could be
+        # sent to Apply, which only ever failed with "Apply is not
+        # implemented for 3.4" — REVIEW is the correct, always-human-in-the-
+        # loop status for this whole check, same as 2A.4/2R.1.
+        if ($danger.Count) { return [pscustomobject]@{ Current = "$cur — DANGEROUS exclusion present: $($danger -join ', ')"; Compliant = $null } }
         [pscustomobject]@{ Current = $cur; Compliant = $null }
     }

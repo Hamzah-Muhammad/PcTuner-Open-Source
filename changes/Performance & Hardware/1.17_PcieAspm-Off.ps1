@@ -1,4 +1,4 @@
-# 1.17 — PCIe link-state power management off. Performance & Hardware sector.
+﻿# 1.17 — PCIe link-state power management off. Performance & Hardware sector.
 # GPU PCIe link never down-clocks into a latency penalty.
 param([switch]$Check, [switch]$Apply, [switch]$Undo, [string]$PreviousValueJson)
 $ScriptDir = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent ([Diagnostics.Process]::GetCurrentProcess().MainModule.FileName) }

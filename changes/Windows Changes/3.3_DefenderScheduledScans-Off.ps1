@@ -1,4 +1,4 @@
-# 3.3 — Defender scheduled scans OFF, real-time stays ON (Level 3, Security Trade-off). Windows Changes sector.
+﻿# 3.3 — Defender scheduled scans OFF, real-time stays ON (Level 3, Security Trade-off). Windows Changes sector.
 # Background full scans tank frame times mid-game. Real-time + tamper
 # protection are NEVER touched here. Windows Update resets the schedule —
 # audit re-checks.

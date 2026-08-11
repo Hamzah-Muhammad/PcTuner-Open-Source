@@ -1,4 +1,4 @@
-# 2A.1 — Remove Microsoft AI Manager (aimgr). Windows Changes sector.
+﻿# 2A.1 — Remove Microsoft AI Manager (aimgr). Windows Changes sector.
 # Also covers what was Startup Optimizer's W.4 — merged, identical package match.
 # Windows Update reinstalls it — audit re-flags.
 param([switch]$Check, [switch]$Apply, [switch]$Undo, [string]$PreviousValueJson)

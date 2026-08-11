@@ -1,4 +1,4 @@
-# 2S.12 — CDPSvc -> Disabled. Services sector.
+﻿# 2S.12 — CDPSvc -> Disabled. Services sector.
 # Connected Devices Platform service (pairs with Windows Changes\1.4).
 param([switch]$Check, [switch]$Apply, [switch]$Undo, [string]$PreviousValueJson)
 $ScriptDir = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent ([Diagnostics.Process]::GetCurrentProcess().MainModule.FileName) }

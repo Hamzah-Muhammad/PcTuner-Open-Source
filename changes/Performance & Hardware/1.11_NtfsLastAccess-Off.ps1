@@ -1,4 +1,4 @@
-# 1.11 — NTFS last-access updates off. Performance & Hardware sector.
+﻿# 1.11 — NTFS last-access updates off. Performance & Hardware sector.
 # One less metadata write per file read.
 param([switch]$Check, [switch]$Apply, [switch]$Undo, [string]$PreviousValueJson)
 $ScriptDir = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent ([Diagnostics.Process]::GetCurrentProcess().MainModule.FileName) }

@@ -1,4 +1,4 @@
-import "./PageHeading.css";
+import styles from "./PageHeading.module.css";
 
 interface PageHeadingProps {
   eyebrow: string;
@@ -18,13 +18,16 @@ export function PageHeading({
   size = "lg",
 }: PageHeadingProps) {
   return (
-    <div className="heading">
-      <div className="eyebrow">{eyebrow}</div>
-      <h1 className="title" style={{ fontSize: size === "lg" ? 34 : 30 }}>
+    <div className={styles.heading}>
+      <div className={styles.eyebrow}>{eyebrow}</div>
+      <h1
+        className={styles.title}
+        style={{ fontSize: size === "lg" ? 34 : 30 }}
+      >
         {headingPlain}
-        <span className="accent">{headingAccent}</span>
+        <span className={styles.accent}>{headingAccent}</span>
       </h1>
-      <p className="subtitle">{subtitle}</p>
+      <p className={styles.subtitle}>{subtitle}</p>
     </div>
   );
 }

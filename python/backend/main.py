@@ -7,13 +7,14 @@ import threading
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, PlainTextResponse
 
 from . import manifest, ps_bridge, reports
 from .__version__ import __version__
 from .models import (
     ApplyItemResult,
     ApplyRequest,
+    ApplyRunResult,
     CatalogItem,
     PCSpecs,
     ScanRequest,
@@ -30,7 +31,7 @@ TOOL_META = {
         Tag="FOR GAMING RIGS",
         Desc="Deep gaming optimization: telemetry & background-contention elimination, "
         "service debloat, NIC tuning, and aggressive security trade-offs.",
-        Meta="v0.3 · 54 checks · dry run",
+        Meta="v0.3 · 54 checks · apply is reversible",
     ),
     "startup": ToolMeta(
         Key="startup",
@@ -38,7 +39,7 @@ TOOL_META = {
         Tag="FOR EVERYDAY PCs",
         Desc="Lists every app, logon task, and Windows extra that launches itself at logon "
         "— uncheck the keepers, clear the rest.",
-        Meta="v0.1 · dynamic scan · dry run",
+        Meta="v0.1 · dynamic scan · apply is reversible",
     ),
 }
 
@@ -46,6 +47,7 @@ TOOL_META = {
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     app.state.locks = {"fps": threading.Lock(), "startup": threading.Lock()}
+    app.state.scan_pc_lock = threading.Lock()
     app.state.last_scan: dict[str, list[ScanResult]] = {}
     app.state.system_scan: SystemInventory | None = None
     app.state.ps_host_error: str | None = None
@@ -128,7 +130,16 @@ def get_latest_report(tool: str):
     return report
 
 
-@app.post("/api/{tool}/apply", response_model=list[ApplyItemResult])
+@app.get("/api/{tool}/report/latest.md")
+def get_latest_report_markdown(tool: str):
+    _require_tool(tool)
+    markdown = reports.latest_scan_report_markdown(tool)
+    if markdown is None:
+        raise HTTPException(404, f"no report yet for '{tool}'")
+    return PlainTextResponse(markdown, media_type="text/markdown")
+
+
+@app.post("/api/{tool}/apply", response_model=ApplyRunResult)
 def post_apply(tool: str, req: ApplyRequest):
     _require_tool(tool)
     lock = app.state.locks[tool]
@@ -154,20 +165,43 @@ def post_apply(tool: str, req: ApplyRequest):
             # Whole-run pre-flight refusal, not per-item skip (§8.5).
             raise HTTPException(409, f"a game is running ({game.get('Names')}) — apply refused")
 
+        # The confirm modal tells the user "a System Restore Point will be
+        # created first" — the result used to be caught and discarded here,
+        # so that promise could silently not happen with no indication to
+        # anyone. It's still a coarse safety net on top of the undo log
+        # (§8.5), so a failure here never blocks the apply itself — it's
+        # just no longer a secret.
+        restore_point_ok = True
+        restore_point_note: str | None = None
         try:
-            ps_bridge.create_restore_point(f"PcTuner-Open-Source apply — {TOOL_META[tool].Name}")
-        except ps_bridge.PSBridgeError:
-            pass  # coarse safety net only; the undo log is the real one (§8.5)
+            rp = ps_bridge.create_restore_point(f"PCTuner apply — {TOOL_META[tool].Name}")
+            restore_point_ok = bool(rp.get("Success"))
+            restore_point_note = rp.get("Note")
+        except ps_bridge.PSBridgeError as e:
+            restore_point_ok = False
+            restore_point_note = e.message
 
         items_by_id = _catalog_by_id(tool)
         undo_log = reports.UndoLog(tool)
         results: list[ApplyItemResult] = []
         for result in ps_bridge.apply_sequential(items_by_id, checked_ids):
-            undo_log.record(result)
+            undo_log.record(result, items_by_id[result.Id])
             results.append(result)
 
         reports.write_apply_report(tool, results)
-        return results
+        # Invalidate rather than trust the scan that got us here: it no
+        # longer reflects reality the instant any item actually changed.
+        # Without this, two POST /apply calls in a row with the same body
+        # both pass the "checked + PENDING" re-validation using the SAME
+        # stale scan, and the second apply's undo log ends up recording the
+        # already-optimized value as "PreviousValue" — Undo would then
+        # "restore" straight back to the optimized state. The frontend
+        # already re-scans after every apply, which masks this in normal
+        # use, but the server-side check needs to be correct on its own.
+        app.state.last_scan.pop(tool, None)
+        return ApplyRunResult(
+            Results=results, RestorePointOk=restore_point_ok, RestorePointNote=restore_point_note
+        )
     finally:
         lock.release()
 
@@ -175,7 +209,8 @@ def post_apply(tool: str, req: ApplyRequest):
 @app.get("/api/{tool}/undo/available")
 def get_undo_available(tool: str):
     _require_tool(tool)
-    return {"available": reports.latest_undo_log(tool) is not None}
+    age = reports.undo_log_age_seconds(tool)
+    return {"available": age is not None, "ageSeconds": age}
 
 
 @app.post("/api/{tool}/undo", response_model=list[UndoItemResult])
@@ -188,19 +223,35 @@ def post_undo(tool: str):
         undo_records = reports.latest_undo_log(tool)
         if not undo_records:
             raise HTTPException(404, f"no apply run to undo for '{tool}'")
-        items_by_id = _catalog_by_id(tool)
-        return list(ps_bridge.undo_sequential(items_by_id, undo_records))
+        results = list(ps_bridge.undo_sequential(undo_records))
+        # Only retire on a fully clean run — a partial failure should leave
+        # the log in place so the user can retry via the same button rather
+        # than losing the ability to finish undoing what's left.
+        if results and all(r.Success for r in results):
+            reports.retire_undo_log(tool)
+        # Same reasoning as post_apply: the most recent scan no longer
+        # reflects reality once anything actually got reverted.
+        app.state.last_scan.pop(tool, None)
+        return results
     finally:
         lock.release()
 
 
 @app.post("/api/scan-pc", response_model=SystemInventory)
 def post_scan_pc():
-    scan = ps_bridge.run_system_scan()
-    inventory = SystemInventory(**scan)
-    app.state.system_scan = inventory
-    app.state.pc_specs = inventory.Specs
-    return inventory
+    # Every other long-running route (scan/apply/undo) guards against
+    # concurrent calls racing on shared state -- this one didn't, so two
+    # rapid "Scan PC" clicks could race on shared\cache\SystemScan.json.
+    if not app.state.scan_pc_lock.acquire(blocking=False):
+        raise HTTPException(409, "a PC scan is already in progress")
+    try:
+        scan = ps_bridge.run_system_scan()
+        inventory = SystemInventory(**scan)
+        app.state.system_scan = inventory
+        app.state.pc_specs = inventory.Specs
+        return inventory
+    finally:
+        app.state.scan_pc_lock.release()
 
 
 @app.get("/api/scan-pc")

@@ -1,4 +1,4 @@
-# StartupFolderShortcut.ps1 — PC Startup sector action script. Parameterized
+﻿# StartupFolderShortcut.ps1 — PC Startup sector action script. Parameterized
 # per discovered shortcut from Enumerate.ps1. Apply BACKS UP the file before
 # deleting it — a shortcut's binary content can't be reconstructed from a
 # JSON string the way a registry DWORD can (§8.5).

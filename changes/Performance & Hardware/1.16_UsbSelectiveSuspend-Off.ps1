@@ -1,4 +1,4 @@
-# 1.16 — USB selective suspend off. Performance & Hardware sector.
+﻿# 1.16 — USB selective suspend off. Performance & Hardware sector.
 # Prevents input-device latency/wake hitches.
 param([switch]$Check, [switch]$Apply, [switch]$Undo, [string]$PreviousValueJson)
 $ScriptDir = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent ([Diagnostics.Process]::GetCurrentProcess().MainModule.FileName) }

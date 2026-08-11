@@ -1,6 +1,6 @@
 import type { PCSpecs } from "../api";
 import { Chip } from "../primitives/Chip";
-import "./SpecsPanel.css";
+import styles from "./SpecsPanel.module.css";
 
 interface SpecsPanelProps {
   specs: PCSpecs;
@@ -12,7 +12,7 @@ export function SpecsPanel({ specs }: SpecsPanelProps) {
     ? "Administrator"
     : "NOT elevated — some checks limited";
   return (
-    <div className="panel">
+    <div className={styles.panel}>
       <Chip label="CPU" value={`${specs.CPU}  [${specs.Cores}]`} />
       <Chip label="GPU" value={specs.GPU} />
       <Chip label="RAM" value={specs.RAM} />

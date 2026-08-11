@@ -25,7 +25,13 @@ function App() {
     api
       .health()
       .then((h) => setHealthWarning(h.ok ? null : "PowerShell not found"))
-      .catch(() => {});
+      // A failure HERE (network error, backend not actually up yet, ...) is
+      // a more severe case than "PowerShell not found" — silently
+      // swallowing it meant the one banner meant to catch backend problems
+      // never fires for the backend being unreachable at all.
+      .catch(() =>
+        setHealthWarning("Couldn't reach the backend — try restarting the app"),
+      );
     api
       .version()
       .then((v) => setVersion(v.version))
@@ -37,7 +43,9 @@ function App() {
     setScanPcError(null);
     try {
       const inventory = await api.scanPc();
-      setToolsData((prev) => (prev ? { ...prev, specs: inventory.Specs } : prev));
+      setToolsData((prev) =>
+        prev ? { ...prev, specs: inventory.Specs } : prev,
+      );
     } catch (e) {
       setScanPcError(e instanceof Error ? e.message : "scan failed");
     } finally {

@@ -1,4 +1,4 @@
-# 2B.3 — Storage Sense off. Performance & Hardware sector.
+﻿# 2B.3 — Storage Sense off. Performance & Hardware sector.
 # No surprise background cleanups mid-game; clean manually instead.
 param([switch]$Check, [switch]$Apply, [switch]$Undo, [string]$PreviousValueJson)
 $ScriptDir = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent ([Diagnostics.Process]::GetCurrentProcess().MainModule.FileName) }

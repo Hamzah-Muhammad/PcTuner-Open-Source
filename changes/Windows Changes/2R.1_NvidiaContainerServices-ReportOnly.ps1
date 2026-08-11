@@ -1,4 +1,4 @@
-# 2R.1 — NVIDIA container services (report-only). Windows Changes sector.
+﻿# 2R.1 — NVIDIA container services (report-only). Windows Changes sector.
 # NvContainerLocalSystem / NVDisplay.ContainerLocalSystem host real NVIDIA
 # Control Panel / driver-settings functionality, not just telemetry — unlike
 # DiagTrack/SysMain, there's no version of this that's safe to auto-disable.

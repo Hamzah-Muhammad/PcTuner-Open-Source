@@ -1,4 +1,4 @@
-# 2S.17 — PcaSvc -> Manual. Services sector.
+﻿# 2S.17 — PcaSvc -> Manual. Services sector.
 # Program Compatibility Assistant. Windows Update flips it back — audit re-checks.
 param([switch]$Check, [switch]$Apply, [switch]$Undo, [string]$PreviousValueJson)
 $ScriptDir = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent ([Diagnostics.Process]::GetCurrentProcess().MainModule.FileName) }

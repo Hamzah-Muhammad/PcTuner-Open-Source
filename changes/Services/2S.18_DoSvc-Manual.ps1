@@ -1,4 +1,4 @@
-# 2S.18 — DoSvc (Delivery Optimization) -> Manual. Services sector.
+﻿# 2S.18 — DoSvc (Delivery Optimization) -> Manual. Services sector.
 # Set-Service is Access-Denied on this service — the registry Start value is
 # edited directly instead (3 = Manual).
 param([switch]$Check, [switch]$Apply, [switch]$Undo, [string]$PreviousValueJson)

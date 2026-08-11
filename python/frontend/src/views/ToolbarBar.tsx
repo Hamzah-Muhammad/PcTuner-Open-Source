@@ -1,5 +1,5 @@
 import { Button } from "../primitives/Button";
-import "./ToolbarBar.css";
+import styles from "./ToolbarBar.module.css";
 
 interface ToolbarBarProps {
   onSelectAll: () => void;
@@ -42,8 +42,8 @@ export function ToolbarBar({
   undoing,
 }: ToolbarBarProps) {
   return (
-    <div className="bar">
-      <div className="left">
+    <div className={styles.bar}>
+      <div className={styles.left}>
         <Button onClick={onSelectAll}>Select all</Button>
         <Button onClick={onSelectNone}>Select none</Button>
         <Button onClick={onUncheckLevel3}>Uncheck Level 3</Button>
@@ -54,9 +54,13 @@ export function ToolbarBar({
           {undoing ? "Undoing…" : "Undo last apply"}
         </Button>
       </div>
-      <div className="right">
-        <span className="status">{statusText}</span>
-        <Button variant="primary" onClick={onRescan} disabled={scanning || applying}>
+      <div className={styles.right}>
+        <span className={styles.status}>{statusText}</span>
+        <Button
+          variant="primary"
+          onClick={onRescan}
+          disabled={scanning || applying}
+        >
           {hasScanned ? "Re-scan" : "Scan"}
         </Button>
         <Button

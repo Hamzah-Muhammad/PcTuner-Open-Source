@@ -1,4 +1,4 @@
-# PrimeChecks.ps1 — shared I/O primitives for every individual change script
+﻿# PrimeChecks.ps1 — shared I/O primitives for every individual change script
 # under changes\<Sector>\*.ps1. Dot-source this before PrimeHeadless.ps1.
 #
 # Read-only Test-* functions predate this file (moved here unchanged from the
@@ -34,7 +34,14 @@ function Set-RegValueTracked {
     param($Path, $Name, $Value, [string]$Type = 'DWord')
     $existed = $false; $prev = $null
     try { $prev = (Get-ItemProperty -Path $Path -Name $Name -ErrorAction Stop).$Name; $existed = $true } catch {}
-    New-Item -Path $Path -Force -ErrorAction SilentlyContinue | Out-Null
+    # `New-Item -Force` on a key that ALREADY EXISTS does not no-op — it
+    # recreates the key, silently deleting every OTHER value already stored
+    # under it (confirmed directly: a disposable test key with two values
+    # lost the untouched second value the moment -Force ran again on the
+    # already-existing key). Only create when genuinely missing.
+    if (-not (Test-Path -Path $Path)) {
+        New-Item -Path $Path -Force -ErrorAction SilentlyContinue | Out-Null
+    }
     Set-ItemProperty -Path $Path -Name $Name -Value $Value -Type $Type
     New-TrackedResult -Success $true -PreviouslyExisted $existed -PreviousValue $prev
 }
@@ -61,19 +68,49 @@ function Test-ServiceStartMode {
     }
 }
 
+function Resolve-ServiceStartupTypeValue {
+    # Win32_Service.StartMode's CIM vocabulary (Boot/System/Auto/Manual/
+    # Disabled) does not line up with Set-Service -StartupType's enum, whose
+    # exact member set differs by host: Windows PowerShell 5.1's
+    # System.ServiceProcess.ServiceStartMode has no delayed-start member at
+    # all, while PowerShell 7's Microsoft.PowerShell.Commands.ServiceStartupType
+    # adds AutomaticDelayedStart. Passing CIM's literal "Auto" straight
+    # through either silently binds to the wrong member via partial-name
+    # matching (5.1 quietly accepts "Auto" as a prefix of "Automatic") or
+    # throws outright on an ambiguous prefix (7, now that AutomaticDelayedStart
+    # also starts with "Auto") — resolving to a full, explicit member name
+    # here removes the ambiguity on both hosts.
+    param([string]$StartMode, [bool]$DelayedAutoStart)
+    if ($StartMode -eq 'Auto') {
+        if ($DelayedAutoStart) { return 'AutomaticDelayedStart' }
+        return 'Automatic'
+    }
+    return $StartMode   # Boot / System / Manual / Disabled already match literally
+}
+
 function Set-ServiceStartModeTracked {
     param($Svc, $Expected)
     $s = Get-CimInstance Win32_Service -Filter "Name='$Svc'" -ErrorAction SilentlyContinue
     if (-not $s) { return New-TrackedResult -Success $true -Note 'service not present — nothing to do' }
     $prevMode = $s.StartMode
+    $prevDelayed = [bool]$s.DelayedAutoStart
     Set-Service -Name $Svc -StartupType $Expected -ErrorAction Stop
-    New-TrackedResult -Success $true -PreviouslyExisted $true -PreviousValue $prevMode
+    New-TrackedResult -Success $true -PreviouslyExisted $true -PreviousValue @{ StartMode = $prevMode; DelayedAutoStart = $prevDelayed }
 }
 
 function Undo-ServiceStartModeTracked {
     param($Svc, [bool]$PreviouslyExisted, $PreviousValue)
     if (-not $PreviouslyExisted) { return New-TrackedResult -Success $true -Note 'was not present at apply time — nothing to restore' }
-    Set-Service -Name $Svc -StartupType $PreviousValue -ErrorAction Stop
+    $target = Resolve-ServiceStartupTypeValue -StartMode $PreviousValue.StartMode -DelayedAutoStart ([bool]$PreviousValue.DelayedAutoStart)
+    try {
+        Set-Service -Name $Svc -StartupType $target -ErrorAction Stop
+    } catch {
+        if ($target -ne 'AutomaticDelayedStart') { throw }
+        # Delayed-start isn't representable on every host (Windows PowerShell
+        # 5.1 has no such enum member) — fall back to plain Automatic rather
+        # than failing the whole undo over losing just that nuance.
+        Set-Service -Name $Svc -StartupType 'Automatic' -ErrorAction Stop
+    }
     New-TrackedResult -Success $true
 }
 
@@ -137,7 +174,17 @@ function Disable-ScheduledTaskTracked {
     param($TaskPath, $TaskName)
     $t = Get-ScheduledTask -TaskPath $TaskPath -TaskName $TaskName -ErrorAction SilentlyContinue
     if (-not $t) { return New-TrackedResult -Success $true -Note 'task not present — nothing to do' }
-    $prevState = $t.State
+    # .State is a StateEnum, not a string — ConvertTo-Json serializes an
+    # unstringified enum as its underlying INTEGER, which then can never
+    # -eq 'Disabled' again on the undo side. Stringify at the source instead
+    # of trying to compare around the problem later.
+    $prevState = $t.State.ToString()
+    if ($prevState -eq 'Disabled') {
+        # Already compliant — applying again would be a false "we changed
+        # this" that then makes Undo re-enable a task the tool never
+        # actually touched.
+        return New-TrackedResult -Success $true -PreviouslyExisted $true -PreviousValue $prevState -Note 'already Disabled — no action taken'
+    }
     Disable-ScheduledTask -TaskPath $TaskPath -TaskName $TaskName -ErrorAction Stop | Out-Null
     New-TrackedResult -Success $true -PreviouslyExisted $true -PreviousValue $prevState
 }
@@ -145,7 +192,7 @@ function Disable-ScheduledTaskTracked {
 function Undo-ScheduledTaskTracked {
     param($TaskPath, $TaskName, [bool]$PreviouslyExisted, $PreviousValue)
     if (-not $PreviouslyExisted) { return New-TrackedResult -Success $true -Note 'was not present at apply time — nothing to restore' }
-    if ($PreviousValue -eq 'Disabled') { return New-TrackedResult -Success $true -Note 'was already Disabled — nothing to restore' }
+    if ("$PreviousValue" -eq 'Disabled') { return New-TrackedResult -Success $true -Note 'was already Disabled — nothing to restore' }
     Enable-ScheduledTask -TaskPath $TaskPath -TaskName $TaskName -ErrorAction Stop | Out-Null
     New-TrackedResult -Success $true
 }
@@ -174,24 +221,41 @@ function Remove-AppxPackageTracked {
     $pattern = ($NamePatterns -join '|')
     $pkg = @(Get-AppxPackage -ErrorAction SilentlyContinue | Where-Object { $_.Name -match $pattern })
     if (-not $pkg.Count) { return New-TrackedResult -Success $true -Note 'not installed — nothing to do' }
-    $families = $pkg | Select-Object -ExpandProperty PackageFamilyName -Unique
+    # PackageFullName, not just PackageFamilyName — the full name (with
+    # version/architecture/publisher hash) is what's actually needed to
+    # reconstruct the real on-disk staging folder for Undo below.
+    $fullNames = $pkg | Select-Object -ExpandProperty PackageFullName -Unique
     foreach ($p in $pkg) { Remove-AppxPackage -Package $p.PackageFullName -ErrorAction Stop }
-    New-TrackedResult -Success $true -PreviouslyExisted $true -PreviousValue ($families -join ',')
+    New-TrackedResult -Success $true -PreviouslyExisted $true -PreviousValue ($fullNames -join ',')
 }
 
 function Undo-AppxPackageTracked {
     param([bool]$PreviouslyExisted, $PreviousValue)
     if (-not $PreviouslyExisted) { return New-TrackedResult -Success $true -Note 'was not installed at apply time — nothing to restore' }
-    $families = @("$PreviousValue" -split ',' | Where-Object { $_ })
+    $fullNames = @("$PreviousValue" -split ',' | Where-Object { $_ })
     $restored = [System.Collections.Generic.List[string]]::new()
     $failed = [System.Collections.Generic.List[string]]::new()
-    foreach ($fam in $families) {
-        try { Add-AppxPackage -Register -DisableDevelopmentMode -Path "$env:SystemRoot\WinStore\$fam" -ErrorAction Stop
-              $restored.Add($fam) }
-        catch { $failed.Add($fam) }
+    foreach ($full in $fullNames) {
+        # The real staging location — the previous path
+        # ($env:SystemRoot\WinStore\...) does not exist on any known
+        # Windows version, so Add-AppxPackage -Register there could never
+        # have succeeded. Test-Path first rather than attempting a call
+        # that's guaranteed to fail when the files are genuinely gone
+        # (the common case: Remove-AppxPackage without -AllUsers usually
+        # deletes the package's files here too, not just deregisters them —
+        # this only recovers the narrower case where they're still present,
+        # e.g. another user account still has the package installed).
+        $manifest = Join-Path $env:ProgramFiles "WindowsApps\$full\AppxManifest.xml"
+        if (-not (Test-Path $manifest)) {
+            $failed.Add($full)
+            continue
+        }
+        try { Add-AppxPackage -Register -DisableDevelopmentMode -Path $manifest -ErrorAction Stop
+              $restored.Add($full) }
+        catch { $failed.Add($full) }
     }
     if ($failed.Count) {
-        New-TrackedResult -Success ($restored.Count -gt 0) -Note "could not restore: $($failed -join ', ') — package likely fully de-provisioned; reinstall from Microsoft Store if needed"
+        New-TrackedResult -Success ($restored.Count -gt 0) -Note "could not restore: $($failed -join ', ') — package files are no longer on disk (fully removed/de-provisioned); reinstall from Microsoft Store if needed"
     } else {
         New-TrackedResult -Success $true
     }
@@ -203,10 +267,18 @@ function Undo-AppxPackageTracked {
 # fires, and a false "no game running" read here would be unsafe, not just
 # imprecise.
 
+# RiotClientServices is deliberately NOT here — confirmed live (2026-08-09)
+# that it's the Riot launcher/updater, which auto-starts at logon and stays
+# running as a background service regardless of whether a game is actually
+# being played. Including it made Apply permanently refuse for every Riot
+# user, every time, with no override. The actual games (VALORANT, League)
+# are already covered by their own real process names below. csgo dropped
+# (Counter-Strike 2 replaced it in place; the process no longer exists).
 $Script:KnownGameProcessNames = @(
-    'RainbowSix', 'r5apex', 'VALORANT-Win64-Shipping', 'csgo', 'cs2',
-    'FortniteClient-Win64-Shipping', 'League of Legends', 'RiotClientServices',
-    'GTA5', 'RDR2', 'eldenring', 'overwatch'
+    'RainbowSix', 'r5apex', 'VALORANT-Win64-Shipping', 'cs2',
+    'FortniteClient-Win64-Shipping', 'League of Legends',
+    'GTA5', 'RDR2', 'eldenring', 'Overwatch', 'RustClient', 'TslGame',
+    'destiny2', 'dota2', 'GenshinImpact', 'RobloxPlayerBeta'
 )
 
 function Test-GameRunningTracked {
@@ -218,9 +290,10 @@ function Test-GameRunningTracked {
     }
 }
 
-# ---------- NIC (also duplicated in shared\Invoke-SystemScan.ps1 — a
-# handful of lines — so each caller stays self-contained rather than
-# dot-sourcing a shared helper file just for this) ----------
+# ---------- NIC ----------
+# Single definition — Invoke-SystemScan.ps1 already dot-sources this file
+# and calls this same function rather than keeping its own copy, so 1.14/
+# 1.15/3.5/the specs panel all agree on which adapter is "the" active one.
 
 function Get-ActiveNic {
     Get-NetAdapter -Physical -ErrorAction SilentlyContinue |
