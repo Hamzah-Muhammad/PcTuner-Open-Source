@@ -122,6 +122,15 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return res.json() as Promise<T>;
 }
 
+async function requestText(path: string): Promise<string> {
+  const res = await fetch(path);
+  if (!res.ok) {
+    const body = await res.json().catch(() => null);
+    throw new ApiError(res.status, body?.detail ?? res.statusText);
+  }
+  return res.text();
+}
+
 export const api = {
   health: () => request<HealthResponse>("/api/health"),
   version: () => request<VersionResponse>("/api/version"),
@@ -136,6 +145,8 @@ export const api = {
     request<{ path: string; results: ScanResult[] }>(
       `/api/${tool}/report/latest`,
     ),
+  latestReportMarkdown: (tool: ToolKey) =>
+    requestText(`/api/${tool}/report/latest.md`),
   apply: (tool: ToolKey, checked: string[]) =>
     request<ApplyRunResult>(`/api/${tool}/apply`, {
       method: "POST",

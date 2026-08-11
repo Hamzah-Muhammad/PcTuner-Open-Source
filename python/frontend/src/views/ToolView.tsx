@@ -12,6 +12,7 @@ import { SpecsPanel } from "../layout/SpecsPanel";
 import { Topbar } from "../layout/Topbar";
 import { ConfirmModal } from "../primitives/ConfirmModal";
 import { ChecklistPanel, type LevelMeta } from "./ChecklistPanel";
+import { ReportModal } from "./ReportModal";
 import { StatsPanel, type ScanCounts } from "./StatsPanel";
 import { ToolbarBar } from "./ToolbarBar";
 import styles from "./ToolView.module.css";
@@ -99,6 +100,7 @@ export function ToolView({ tool, specs, onBack }: ToolViewProps) {
   const [undoAgeSeconds, setUndoAgeSeconds] = useState<number | null>(null);
   const [showApplyModal, setShowApplyModal] = useState(false);
   const [showUndoModal, setShowUndoModal] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
   // Per-item Apply/Undo failures, surfaced explicitly — without this, a
   // partial failure (e.g. Access Denied on one service) was indistinguishable
   // in the UI from the user simply not having checked that item, since the
@@ -220,8 +222,7 @@ export function ToolView({ tool, specs, onBack }: ToolViewProps) {
       const l3 = new Set(catalog.filter((i) => i.Level === 3).map((i) => i.Id));
       return new Set([...prev].filter((id) => !l3.has(id)));
     });
-  const openReport = () =>
-    window.open(`/api/${tool}/report/latest.md`, "_blank");
+  const openReport = () => setShowReportModal(true);
 
   // Eligibility is derived, never trusted as-is by the server (§8.5) — this
   // is purely so the confirmation modal can tell the user an accurate count
@@ -424,6 +425,10 @@ export function ToolView({ tool, specs, onBack }: ToolViewProps) {
           onConfirm={confirmUndo}
           onCancel={() => setShowUndoModal(false)}
         />
+      )}
+
+      {showReportModal && (
+        <ReportModal tool={tool} onClose={() => setShowReportModal(false)} />
       )}
 
       <Footer note={cfg.footerNote} />
