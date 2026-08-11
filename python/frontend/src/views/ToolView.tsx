@@ -35,13 +35,13 @@ const TOOL_CONFIG: Record<ToolKey, ToolConfig> = {
     headingPlain: "FPS ",
     headingAccent: "Optimizer",
     subtitle:
-      "Press Scan to check this PC against 54 known optimizations — green means already applied. Uncheck anything you don't want, then Apply when ready: every change is logged and can be undone.",
+      "Press Scan to check this PC against 54 known optimizations — ✓ APPLIED means already done. Uncheck anything you don't want, then Apply when ready: every change is logged and can be undone.",
     footerNote:
       "FPS Optimizer v0.3 · every applied change is logged and reversible",
     levelMeta: {
-      1: { title: "LEVEL 1 · SAFE", color: "var(--green)" },
-      2: { title: "LEVEL 2 · DEBLOAT", color: "var(--gold-a)" },
-      3: { title: "LEVEL 3 · AGGRESSIVE", color: "var(--gold-b)" },
+      1: { title: "LEVEL 1 · SAFE", color: "var(--muted)" },
+      2: { title: "LEVEL 2 · DEBLOAT", color: "var(--red)" },
+      3: { title: "LEVEL 3 · AGGRESSIVE", color: "var(--red-hi)" },
     },
   },
   startup: {
@@ -50,13 +50,13 @@ const TOOL_CONFIG: Record<ToolKey, ToolConfig> = {
     headingPlain: "Startup ",
     headingAccent: "Optimizer",
     subtitle:
-      "Press Scan to see every app, task, and Windows extra that launches itself at logon on this PC. Green means already clean. Unchecked rows are recommended keeps. Apply makes real changes — each one is logged and can be undone.",
+      "Press Scan to see every app, task, and Windows extra that launches itself at logon on this PC. ✓ APPLIED means already clean. Unchecked rows are recommended keeps. Apply makes real changes — each one is logged and can be undone.",
     footerNote:
       "Startup Optimizer v0.1 · every applied change is logged and reversible",
     levelMeta: {
-      1: { title: "STARTUP APPS", color: "var(--green)" },
-      2: { title: "LOGON TASKS", color: "var(--gold-a)" },
-      3: { title: "WINDOWS EXTRAS", color: "var(--gold-b)" },
+      1: { title: "STARTUP APPS", color: "var(--muted)" },
+      2: { title: "LOGON TASKS", color: "var(--red)" },
+      3: { title: "WINDOWS EXTRAS", color: "var(--red-hi)" },
     },
   },
 };

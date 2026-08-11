@@ -1,23 +1,21 @@
-/* Design tokens ported 1:1 from shared/PrimeUI.ps1's $P palette — this is a
-   faithful port of the existing WPF app's look, not a new visual direction.
-   "Polish" here means execution quality (motion, focus states, responsive
-   layout), not a different palette or layout. */
+/* Red/black rebrand (2026-08-09, user-directed) — the app's only hue is red;
+   everything else is grayscale. Status pills are intentionally
+   near-monochrome (distinguished by their text/icon, not color) except
+   ERROR, which keeps red as the one signal that draws the eye — the same
+   reasoning a single accent color exists for at all in a black/gray UI. */
 
 :root {
-  --bg: #09090e;
-  --surface: #111116;
-  --surface-alt: #18181f;
-  --border: #242430;
-  --text: #f2f2f7;
-  --muted: #7c7c86;
-  --muted-dim: #55555f;
-  --green: #00c805;
-  --green-hi: #00e808;
-  --gold-a: #ffd60a;
-  --gold-b: #ff9500;
-  --red: #ff453a;
-  --review-fg: #b8b8c4;
-  --pill-bg: #141419;
+  --bg: #0a0707;
+  --surface: #150d0d;
+  --surface-alt: #1d1313;
+  --border: #2e1919;
+  --text: #f5efee;
+  --muted: #8f7c7c;
+  --muted-dim: #5c4c4c;
+  --red: #ff3b30;
+  --red-hi: #ff5c52;
+  --review-fg: #b8adad;
+  --pill-bg: #180f0f;
 
   --font-ui: "Segoe UI", "Segoe UI Variable", system-ui, sans-serif;
   --font-mono: "Consolas", "Cascadia Mono", ui-monospace, monospace;
@@ -60,7 +58,7 @@ body {
 }
 
 ::selection {
-  background: color-mix(in srgb, var(--green) 35%, transparent);
+  background: color-mix(in srgb, var(--red) 35%, transparent);
   color: var(--text);
 }
 
@@ -83,7 +81,7 @@ body {
 }
 
 :focus-visible {
-  outline: 2px solid var(--green);
+  outline: 2px solid var(--red);
   outline-offset: 2px;
   border-radius: 4px;
 }

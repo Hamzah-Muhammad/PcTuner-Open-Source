@@ -148,7 +148,7 @@ def wait_for_server(port: int, timeout_s: float = 35.0) -> bool:
     return False
 
 
-WINDOW_TITLE = "PcTuner-Open-Source by @Humzeeny"
+WINDOW_TITLE = "PCTuner"
 
 
 def _bring_to_front(_window) -> None:
@@ -232,7 +232,7 @@ def main() -> None:
         frontend_ok = False
         if warning is None:
             body = urllib.request.urlopen(f"http://127.0.0.1:{port}/", timeout=2).read()
-            frontend_ok = b"PcTuner-Open-Source" in body
+            frontend_ok = b"PCTuner" in body
 
         print(f"SELFTEST OK — server up on 127.0.0.1:{port}, frontend mounted: {warning is None}")
         if warning is None and not frontend_ok:

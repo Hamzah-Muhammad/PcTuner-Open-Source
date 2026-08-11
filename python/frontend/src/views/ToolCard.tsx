@@ -9,8 +9,8 @@ interface ToolCardProps {
 }
 
 const TAG_COLOR: Record<string, string> = {
-  fps: "var(--green)",
-  startup: "var(--gold-a)",
+  fps: "var(--red)",
+  startup: "var(--muted)",
 };
 
 /** Ports the tool-launch card built inline in PrimePCTuner.ps1's foreach loop. */

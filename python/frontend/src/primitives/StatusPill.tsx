@@ -19,27 +19,30 @@ const STYLES: Record<
     border: "var(--border)",
     bg: "var(--pill-bg)",
   },
+  // True monochrome by design (red/black rebrand, 2026-08-09) — every status
+  // but ERROR is distinguished by its icon/text only, not color, so the one
+  // colored pill is the one that actually needs your attention.
   APPLIED: {
     text: "✓ APPLIED",
-    fg: "var(--green-hi)",
-    border: "var(--green)",
-    bg: "color-mix(in srgb, var(--green) 12%, transparent)",
+    fg: "var(--text)",
+    border: "var(--border)",
+    bg: "var(--pill-bg)",
   },
   PENDING: {
     text: "→ PENDING",
-    fg: "var(--gold-a)",
-    border: "var(--gold-b)",
-    bg: "color-mix(in srgb, var(--gold-a) 14%, transparent)",
+    fg: "var(--muted)",
+    border: "var(--border)",
+    bg: "var(--pill-bg)",
   },
   REVIEW: {
     text: "◆ REVIEW",
     fg: "var(--review-fg)",
-    border: "var(--muted)",
+    border: "var(--border)",
     bg: "var(--pill-bg)",
   },
   SKIPPED: {
     text: "SKIPPED",
-    fg: "var(--muted)",
+    fg: "var(--muted-dim)",
     border: "var(--border)",
     bg: "var(--pill-bg)",
   },

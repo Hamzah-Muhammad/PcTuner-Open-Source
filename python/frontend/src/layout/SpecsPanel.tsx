@@ -22,7 +22,7 @@ export function SpecsPanel({ specs }: SpecsPanelProps) {
       <Chip
         label="Session"
         value={session}
-        valueColor={specs.Elevated ? undefined : "var(--gold-a)"}
+        valueColor={specs.Elevated ? undefined : "var(--red)"}
       />
     </div>
   );
