@@ -290,9 +290,10 @@ function Test-GameRunningTracked {
     }
 }
 
-# ---------- NIC (also duplicated in shared\Invoke-SystemScan.ps1 — a
-# handful of lines — so each caller stays self-contained rather than
-# dot-sourcing a shared helper file just for this) ----------
+# ---------- NIC ----------
+# Single definition — Invoke-SystemScan.ps1 already dot-sources this file
+# and calls this same function rather than keeping its own copy, so 1.14/
+# 1.15/3.5/the specs panel all agree on which adapter is "the" active one.
 
 function Get-ActiveNic {
     Get-NetAdapter -Physical -ErrorAction SilentlyContinue |

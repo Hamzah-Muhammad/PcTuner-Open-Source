@@ -6,7 +6,7 @@ FPSOptimization/, StartupOptimization/ — those ship as real sibling folders
 next to the exe in the release zip, since subprocess needs actual files on
 disk to hand pwsh/powershell, not PyInstaller's extracted-per-run temp dir.
 
-Run from python/: `pyinstaller build.spec --noconfirm`
+Run from python/: `pyinstaller PcTuner-Open-Source.spec --noconfirm`
 Output: python/dist/PcTuner-Open-Source.exe (bare — won't run standalone until the
 sibling .ps1 folders are copied alongside it, same caveat the ps2exe build
 already carries).

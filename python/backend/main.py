@@ -47,6 +47,7 @@ TOOL_META = {
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     app.state.locks = {"fps": threading.Lock(), "startup": threading.Lock()}
+    app.state.scan_pc_lock = threading.Lock()
     app.state.last_scan: dict[str, list[ScanResult]] = {}
     app.state.system_scan: SystemInventory | None = None
     app.state.ps_host_error: str | None = None
@@ -238,11 +239,19 @@ def post_undo(tool: str):
 
 @app.post("/api/scan-pc", response_model=SystemInventory)
 def post_scan_pc():
-    scan = ps_bridge.run_system_scan()
-    inventory = SystemInventory(**scan)
-    app.state.system_scan = inventory
-    app.state.pc_specs = inventory.Specs
-    return inventory
+    # Every other long-running route (scan/apply/undo) guards against
+    # concurrent calls racing on shared state -- this one didn't, so two
+    # rapid "Scan PC" clicks could race on shared\cache\SystemScan.json.
+    if not app.state.scan_pc_lock.acquire(blocking=False):
+        raise HTTPException(409, "a PC scan is already in progress")
+    try:
+        scan = ps_bridge.run_system_scan()
+        inventory = SystemInventory(**scan)
+        app.state.system_scan = inventory
+        app.state.pc_specs = inventory.Specs
+        return inventory
+    finally:
+        app.state.scan_pc_lock.release()
 
 
 @app.get("/api/scan-pc")

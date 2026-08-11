@@ -341,3 +341,15 @@ def test_scan_pc_post_then_get(client):
 
 def test_scan_pc_get_before_post_is_null(client):
     assert client.get("/api/scan-pc").json() is None
+
+
+def test_scan_pc_refuses_concurrent_calls(client):
+    # Simulates a second "Scan PC" click landing while the first is still
+    # running -- previously this route had no lock at all (unlike every
+    # other long-running route) and could race on shared\cache\SystemScan.json.
+    assert main.app.state.scan_pc_lock.acquire(blocking=False)
+    try:
+        resp = client.post("/api/scan-pc")
+        assert resp.status_code == 409
+    finally:
+        main.app.state.scan_pc_lock.release()

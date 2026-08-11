@@ -35,7 +35,7 @@ export function HubView({
     <div className={styles.page}>
       <Topbar healthWarning={healthWarning} />
       <PageHeading
-        eyebrow="P C T U N E R  ·  O P E N  S O U R C E"
+        eyebrow="PCTUNER · OPEN SOURCE"
         headingPlain="PcTuner"
         headingAccent="Open Source"
         subtitle="Pick the tool that fits this PC — every tool shows you each change as a checkbox before anything happens. Press Scan PC to detect your system."

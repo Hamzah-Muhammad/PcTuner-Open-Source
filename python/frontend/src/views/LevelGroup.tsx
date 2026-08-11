@@ -3,7 +3,7 @@ import { ChecklistRow } from "./ChecklistRow";
 import styles from "./LevelGroup.module.css";
 
 interface LevelGroupProps {
-  levelTitle: string;
+  levelTitle: string | null;
   levelColor: string;
   module: string;
   items: CatalogItem[];
@@ -27,9 +27,11 @@ export function LevelGroup({
   return (
     <div>
       <div className={styles.header}>
-        <span className={styles.levelTitle} style={{ color: levelColor }}>
-          {levelTitle}
-        </span>
+        {levelTitle && (
+          <span className={styles.levelTitle} style={{ color: levelColor }}>
+            {levelTitle}
+          </span>
+        )}
         <span className={styles.moduleLabel}>
           {module.toUpperCase()} · {items.length} ITEMS
         </span>

@@ -54,15 +54,22 @@ export function ChecklistPanel({
           Scanning… up to ~2 min
         </div>
       )}
-      {groups.map((g) => {
+      {groups.map((g, i) => {
         const meta = levelMeta[g.level] ?? {
           title: `LEVEL ${g.level}`,
           color: "var(--muted)",
         };
+        // Only show the level title where the level actually changes from
+        // the previous group — Startup Optimizer has two modules sharing
+        // Level 1 ("Registry Run Entries", "Startup Folder Shortcuts"),
+        // which otherwise renders as two consecutive groups with the exact
+        // same "STARTUP APPS" label, reading like an accidental repeat
+        // rather than two distinct sections.
+        const showLevelTitle = i === 0 || groups[i - 1].level !== g.level;
         return (
           <LevelGroup
             key={`${g.level}|${g.module}`}
-            levelTitle={meta.title}
+            levelTitle={showLevelTitle ? meta.title : null}
             levelColor={meta.color}
             module={g.module}
             items={g.items}

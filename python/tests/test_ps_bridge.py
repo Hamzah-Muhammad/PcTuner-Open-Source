@@ -50,6 +50,27 @@ def test_resolve_ps_exe_missing_raises(monkeypatch):
         ps_bridge.resolve_ps_exe()
 
 
+def test_change_script_args_uses_colon_syntax_for_leading_dash_values(monkeypatch):
+    """A real registry ValueName can start with '-' (e.g. "-Undo"). Passed as
+    two separate argv tokens ("-ValueName", "-Undo"), PowerShell's own
+    parameter binder reads the second token as the START OF A NEW PARAMETER
+    rather than this one's value, and the script dies with "Missing an
+    argument for parameter 'ValueName'". The -Key:value colon form is a
+    single token and sidesteps this regardless of what the value looks like."""
+    captured = {}
+
+    def fake_run(cmd, **kw):
+        captured["cmd"] = cmd
+        return FakeProc(0, json.dumps({"Id": "1.1", "Mode": "Check", "Status": "APPLIED", "Current": "ok"}))
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    item = _item(ScriptArgs={"ValueName": "-Undo"})
+    ps_bridge.run_change_item(item, "Check")
+
+    assert "-ValueName:-Undo" in captured["cmd"]
+    assert "-ValueName" not in captured["cmd"]  # would be the broken two-token form
+
+
 def test_run_change_item_check_success(monkeypatch):
     payload = {"Id": "1.1", "Mode": "Check", "Status": "PENDING", "Current": "AllowTelemetry = 3"}
     monkeypatch.setattr(subprocess, "run", lambda *a, **kw: FakeProc(0, json.dumps(payload)))
@@ -111,6 +132,31 @@ def test_scan_catalog_skips_unchecked_without_subprocess(monkeypatch):
     items = [_item(Id="1.1"), _item(Id="1.2")]
     results = ps_bridge.scan_catalog(items, checked_ids=set())
     assert {r.Status for r in results} == {"SKIPPED"}
+
+
+def test_scan_catalog_survives_malformed_but_valid_json_from_one_item(monkeypatch):
+    """A script that exits 0 with valid JSON missing an expected key (or
+    shaped as a list, e.g. the exact bug class H1 fixed elsewhere) used to
+    raise an uncaught KeyError/TypeError here, which took the ENTIRE scan
+    down -- losing every other item's already-good result along with it.
+    One bad item must degrade to its own ERROR row instead."""
+
+    def fake_run(cmd, **kw):
+        script = cmd[-2]
+        if "good.ps1" in script:
+            return FakeProc(0, json.dumps({"Id": "good", "Status": "APPLIED", "Current": "ok"}))
+        # Valid JSON, exit 0, but missing "Status"/"Current" entirely.
+        return FakeProc(0, json.dumps({"Id": "bad"}))
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    items = [
+        _item(Id="good", script_path="C:\\fake\\good.ps1"),
+        _item(Id="bad", script_path="C:\\fake\\bad.ps1"),
+    ]
+    results = {r.Id: r for r in ps_bridge.scan_catalog(items, checked_ids={"good", "bad"})}
+    assert results["good"].Status == "APPLIED"
+    assert results["bad"].Status == "ERROR"
+    assert "malformed" in results["bad"].Current
 
 
 def test_scan_catalog_maps_status_and_errors(monkeypatch):
@@ -244,8 +290,10 @@ def test_undo_sequential_uses_snapshotted_target_not_catalog_lookup(monkeypatch)
     ]
     results = list(ps_bridge.undo_sequential(records))
     assert results[0].Success is True
-    assert "-RegPath" in captured["cmd"] and "HKCU:\\Run" in captured["cmd"]
-    assert "-ValueName" in captured["cmd"] and "LGHUB" in captured["cmd"]
+    # -Key:value as one token, not two -- see test_change_script_args_uses_colon_syntax
+    # for why (a value starting with "-" breaks the two-token form).
+    assert "-RegPath:HKCU:\\Run" in captured["cmd"]
+    assert "-ValueName:LGHUB" in captured["cmd"]
 
 
 def test_undo_sequential_missing_script_path_reports_failure():

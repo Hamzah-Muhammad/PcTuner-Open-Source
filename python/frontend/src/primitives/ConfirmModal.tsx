@@ -8,8 +8,6 @@ interface ConfirmModalProps {
   message: ReactNode;
   callout?: ReactNode;
   confirmLabel: string;
-  busy?: boolean;
-  busyLabel?: string;
   onConfirm: () => void;
   onCancel: () => void;
 }
@@ -23,8 +21,6 @@ export function ConfirmModal({
   message,
   callout,
   confirmLabel,
-  busy,
-  busyLabel,
   onConfirm,
   onCancel,
 }: ConfirmModalProps) {
@@ -38,11 +34,9 @@ export function ConfirmModal({
         <div className={styles.modalMessage}>{message}</div>
         {callout && <div className={styles.modalCallout}>{callout}</div>}
         <div className={styles.modalActions}>
-          <Button onClick={onCancel} disabled={busy}>
-            Cancel
-          </Button>
-          <Button variant="danger" onClick={onConfirm} disabled={busy}>
-            {busy ? (busyLabel ?? "Working…") : confirmLabel}
+          <Button onClick={onCancel}>Cancel</Button>
+          <Button variant="danger" onClick={onConfirm}>
+            {confirmLabel}
           </Button>
         </div>
       </Card>

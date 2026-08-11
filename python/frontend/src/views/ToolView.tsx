@@ -30,7 +30,7 @@ interface ToolConfig {
 const TOOL_CONFIG: Record<ToolKey, ToolConfig> = {
   fps: {
     title: "FPS Optimizer",
-    eyebrow: "P R I M E P C T U N E R   ·   F O R  G A M I N G  R I G S",
+    eyebrow: "PCTUNER · FOR GAMING RIGS",
     headingPlain: "FPS ",
     headingAccent: "Optimizer",
     subtitle:
@@ -45,7 +45,7 @@ const TOOL_CONFIG: Record<ToolKey, ToolConfig> = {
   },
   startup: {
     title: "Startup Optimizer",
-    eyebrow: "P R I M E P C T U N E R   ·   F O R  E V E R Y D A Y  P C s",
+    eyebrow: "PCTUNER · FOR EVERYDAY PCs",
     headingPlain: "Startup ",
     headingAccent: "Optimizer",
     subtitle:
@@ -157,6 +157,20 @@ export function ToolView({ tool, specs, onBack }: ToolViewProps) {
     }
   }, [tool]);
 
+  const refreshReportAvailable = useCallback(async () => {
+    // "Open report" used to start disabled on every fresh launch, even when
+    // a real DryRun_*.md report from an earlier session already exists on
+    // disk — reportAvailable was pure session state, never checked against
+    // what's actually there. A 404 here just means no report yet, which is
+    // the normal case right after launch.
+    try {
+      await api.latestReport(tool);
+      setReportAvailable(true);
+    } catch {
+      setReportAvailable(false);
+    }
+  }, [tool]);
+
   useEffect(() => {
     // No auto-scan on load — the catalog renders with every row IDLE
     // ("not scanned") until the user presses Scan. Cancellation guard is
@@ -166,7 +180,6 @@ export function ToolView({ tool, specs, onBack }: ToolViewProps) {
     setCatalog(null);
     setResults(new Map());
     setCounts(null);
-    setReportAvailable(false);
     setStatusText("Not scanned yet — press Scan to check");
     setUndoAvailable(false);
     api
@@ -183,10 +196,11 @@ export function ToolView({ tool, specs, onBack }: ToolViewProps) {
         if (!cancelled) setLoadError(e.message ?? "failed to load catalog");
       });
     refreshUndoAvailable();
+    refreshReportAvailable();
     return () => {
       cancelled = true;
     };
-  }, [tool, refreshUndoAvailable]);
+  }, [tool, refreshUndoAvailable, refreshReportAvailable]);
 
   const toggle = (id: string, isChecked: boolean) => {
     setChecked((prev) => {
@@ -387,7 +401,6 @@ export function ToolView({ tool, specs, onBack }: ToolViewProps) {
               : undefined
           }
           confirmLabel="Apply"
-          busyLabel="Applying…"
           onConfirm={confirmApply}
           onCancel={() => setShowApplyModal(false)}
         />
@@ -408,7 +421,6 @@ export function ToolView({ tool, specs, onBack }: ToolViewProps) {
               : undefined
           }
           confirmLabel="Undo"
-          busyLabel="Undoing…"
           onConfirm={confirmUndo}
           onCancel={() => setShowUndoModal(false)}
         />

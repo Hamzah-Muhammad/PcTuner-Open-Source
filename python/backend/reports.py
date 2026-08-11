@@ -16,7 +16,11 @@ REPORT_TITLES = {"fps": "FPS Optimizer dry run", "startup": "Startup Optimizer d
 
 
 def _timestamp() -> str:
-    return datetime.now().strftime("%Y%m%d_%H%M%S")
+    # Microsecond precision, not just seconds -- two applies (e.g. FPS and
+    # Startup, run back-to-back quickly) landing in the same second used to
+    # produce the exact same UndoLog_*.json filename, silently overwriting
+    # the earlier run's undo data with the newer one's.
+    return datetime.now().strftime("%Y%m%d_%H%M%S_%f")
 
 
 def _counts(results: list[ScanResult]) -> dict[str, int]:

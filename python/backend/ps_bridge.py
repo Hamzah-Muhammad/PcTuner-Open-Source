@@ -105,7 +105,13 @@ def _run_json(args: list[str], *, item_id: str | None, timeout: float) -> dict |
 def _change_script_args(item: CatalogItem, mode: str, previous_value_json: str | None) -> list[str]:
     args = ["-File", item.ScriptPath, f"-{mode}"]
     for key, value in item.ScriptArgs.items():
-        args += [f"-{key}", str(value)]
+        # `-Key`, `value` as two separate argv tokens lets PowerShell's own
+        # parameter binder misread a value that itself starts with `-`
+        # (e.g. a real registry value name like "-Undo") as the START OF A
+        # NEW PARAMETER rather than this one's value — "Missing an argument
+        # for parameter 'ValueName'". `-Key:value` is a single token and is
+        # unambiguous no matter what the value looks like.
+        args.append(f"-{key}:{value}")
     if mode == "Undo" and previous_value_json:
         args += ["-PreviousValueJson", previous_value_json]
     return args
@@ -166,6 +172,21 @@ def scan_catalog(items: list[CatalogItem], checked_ids: set[str]) -> list[ScanRe
                         Name=item.Name,
                         Status="ERROR",
                         Current=e.message,
+                        Target=item.Target,
+                    )
+                except (KeyError, TypeError) as e:
+                    # obj["Status"]/obj["Current"] above only guard against
+                    # PSBridgeError (non-zero exit, unparsable JSON) — a
+                    # script that exits 0 with VALID but wrong-shaped JSON
+                    # (missing a key, or a list instead of an object) would
+                    # otherwise raise here uncaught and take the entire scan
+                    # down with it, losing every other item's already-good
+                    # result along with it. Scoped to this one item instead.
+                    results[item.Id] = ScanResult(
+                        Id=item.Id,
+                        Name=item.Name,
+                        Status="ERROR",
+                        Current=f"malformed check output: {e}",
                         Target=item.Target,
                     )
         except FutureTimeoutError:
