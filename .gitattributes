@@ -1,0 +1,6 @@
+# Binary files git must never text-normalize (CRLF conversion would corrupt
+# them) -- explicit even though git's NUL-byte heuristic already catches
+# these, so a rebuilt exe/ico is never silently at risk of it.
+*.exe binary
+*.ico binary
+*.zip binary

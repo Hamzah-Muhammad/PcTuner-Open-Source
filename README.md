@@ -27,10 +27,12 @@ A complete, shipped Windows 11 PC-optimization suite: audit first, checkbox cons
 
 ## Download
 
-Grab the latest release from the **[Releases page](https://github.com/Hamzah-Muhammad/PcTuner-Open-Source/releases/latest)**:
+Every path gets you a ready-to-run `.exe`:
 
-- **`*-win.zip`** — recommended. Unzip anywhere; the `.exe` sits at the top of the extracted folder alongside the sibling folders it needs (`shared/`, `changes/`, `FPSOptimization/`, `StartupOptimization/`). Double-click to run.
-- **Bare `.exe`** — only useful if you already have the sibling folders in place (e.g. you cloned the repo). Won't run standalone on its own.
+- **`git clone` or GitHub's "Download ZIP"** — `PcTuner-Open-Source.exe` is checked into the repo root, right alongside the sibling folders it needs (`shared/`, `changes/`, `FPSOptimization/`, `StartupOptimization/`). Just double-click it.
+- **[Releases page](https://github.com/Hamzah-Muhammad/PcTuner-Open-Source/releases/latest)** — `*-win.zip`: unzip anywhere, same layout, double-click to run.
+
+The root `.exe` is rebuilt and re-committed whenever app code changes, so it always matches the latest source on the branch — never a stale build.
 
 The app self-elevates (UAC prompt) on launch — it needs Administrator rights to read/change the registry, services, and scheduled tasks it audits.
 
