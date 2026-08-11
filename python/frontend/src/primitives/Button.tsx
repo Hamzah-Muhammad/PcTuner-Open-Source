@@ -7,7 +7,8 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 /** Ports the BtnPri / BtnSec XAML Styles. "danger" is a new addition (not in
  * the original WPF app, which had no apply/undo UI) for the apply/undo
- * confirmation flow — same shape as btnPri, red instead of green. */
+ * confirmation flow — Primary is outlined red, Danger is solid-filled red,
+ * so the destructive action still carries more visual weight. */
 export function Button({
   variant = "secondary",
   className,

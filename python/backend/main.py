@@ -71,7 +71,7 @@ async def lifespan(app: FastAPI):
     yield
 
 
-app = FastAPI(title="PcTuner-Open-Source", lifespan=lifespan)
+app = FastAPI(title="PCTuner", lifespan=lifespan)
 
 
 def _require_tool(tool: str) -> None:

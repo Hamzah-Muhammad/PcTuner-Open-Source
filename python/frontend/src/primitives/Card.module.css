@@ -10,5 +10,5 @@
 }
 
 .card.interactive:hover {
-  border-color: color-mix(in srgb, var(--green) 45%, var(--border));
+  border-color: color-mix(in srgb, var(--red) 45%, var(--border));
 }
