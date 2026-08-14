@@ -1,4 +1,4 @@
-# Frontend — PcTuner-Open-Source
+# Frontend — PCTuner-Optimization-Tool
 
 React + TypeScript SPA (Vite) that renders the desktop app's UI: the tool hub, PC-specs bar, per-tool checklists, and Scan/Apply/Undo flows. Talks to the local FastAPI backend in `../backend` over `/api/*`.
 

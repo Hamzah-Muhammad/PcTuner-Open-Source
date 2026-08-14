@@ -1,8 +1,8 @@
-# PcTuner-Open-Source
+# PCTuner-Optimization-Tool
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Platform: Windows 11](https://img.shields.io/badge/platform-Windows%2011-0078D6.svg)](#requirements)
-[![Latest release](https://img.shields.io/github/v/release/Hamzah-Muhammad/PcTuner-Open-Source)](https://github.com/Hamzah-Muhammad/PcTuner-Open-Source/releases/latest)
+[![Latest release](https://img.shields.io/github/v/release/Hamzah-Muhammad/PCTuner-Optimization-Tool)](https://github.com/Hamzah-Muhammad/PCTuner-Optimization-Tool/releases/latest)
 [![Python](https://img.shields.io/badge/Python-3.13-3776AB.svg?logo=python&logoColor=white)](python/pyproject.toml)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.136-009688.svg?logo=fastapi&logoColor=white)](python/requirements.txt)
 [![React](https://img.shields.io/badge/React-18-61DAFB.svg?logo=react&logoColor=white)](python/frontend)
@@ -29,8 +29,8 @@ A complete, shipped Windows 11 PC-optimization suite: audit first, checkbox cons
 
 Every path gets you a ready-to-run `.exe`:
 
-- **`git clone` or GitHub's "Download ZIP"** — `PcTuner-Open-Source.exe` is checked into the repo root, right alongside the sibling folders it needs (`shared/`, `changes/`, `FPSOptimization/`, `StartupOptimization/`). Just double-click it.
-- **[Releases page](https://github.com/Hamzah-Muhammad/PcTuner-Open-Source/releases/latest)** — `*-win.zip`: unzip anywhere, same layout, double-click to run.
+- **`git clone` or GitHub's "Download ZIP"** — `PCTuner-Optimization-Tool.exe` is checked into the repo root, right alongside the sibling folders it needs (`shared/`, `changes/`, `FPSOptimization/`, `StartupOptimization/`). Just double-click it.
+- **[Releases page](https://github.com/Hamzah-Muhammad/PCTuner-Optimization-Tool/releases/latest)** — `*-win.zip`: unzip anywhere, same layout, double-click to run.
 
 The root `.exe` is rebuilt and re-committed whenever app code changes, so it always matches the latest source on the branch — never a stale build.
 
@@ -61,7 +61,7 @@ More tools may join the suite (candidates: NetworkOptimization for latency tunin
 ## Repo layout
 
 ```
-PcTuner-Open-Source/
+PCTuner-Optimization-Tool/
 ├── README.md                  ← you are here
 ├── LICENSE                    ← MIT
 ├── docs/
@@ -92,7 +92,7 @@ PcTuner-Open-Source/
     ├── app.py                  ← desktop entry point (elevation, server, window)
     ├── backend/                ← routes, subprocess bridge to changes\*.ps1, models, reports
     ├── frontend/                ← React SPA (Vite), built to frontend\dist\
-    └── PcTuner-Open-Source.spec        ← PyInstaller onefile packaging spec
+    └── PCTuner-Optimization-Tool.spec        ← PyInstaller onefile packaging spec
 ```
 
 Each catalog item is its own standalone PowerShell script under `changes\`, invoked per-item as a subprocess from the Python backend (via `shared\PrimeHeadless.ps1`'s mode contract) rather than run in-process — isolation over convenience, so one broken/tampered item can only poison its own result. A tool = its `manifest.json` + the shared FastAPI/React app wiring.
@@ -104,8 +104,8 @@ Windows 11, WebView2 (preinstalled on Win11), PowerShell 5.1+ (7+ recommended), 
 ## Building from source
 
 ```powershell
-git clone https://github.com/Hamzah-Muhammad/PcTuner-Open-Source.git
-cd PcTuner-Open-Source\python
+git clone https://github.com/Hamzah-Muhammad/PCTuner-Optimization-Tool.git
+cd PCTuner-Optimization-Tool\python
 
 # Backend
 python -m venv .venv
@@ -121,10 +121,10 @@ cd ..
 .venv\Scripts\python.exe app.py
 
 # Or package a standalone exe (PyInstaller onefile)
-.venv\Scripts\pyinstaller PcTuner-Open-Source.spec --noconfirm
+.venv\Scripts\pyinstaller PCTuner-Optimization-Tool.spec --noconfirm
 ```
 
-Packaging spec: `python/PcTuner-Open-Source.spec`. Full architecture/design rationale: `docs/PYTHON_REWRITE_DESIGN.md`.
+Packaging spec: `python/PCTuner-Optimization-Tool.spec`. Full architecture/design rationale: `docs/PYTHON_REWRITE_DESIGN.md`.
 
 ## License
 

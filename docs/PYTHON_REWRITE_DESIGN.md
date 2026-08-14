@@ -1,4 +1,4 @@
-# PcTuner-Open-Source — Python Rewrite: Structure & Design (v2 planning doc)
+# PCTuner-Optimization-Tool — Python Rewrite: Structure & Design (v2 planning doc)
 
 Status: **approved 2026-07-19 — decisions locked, no Python code written yet.**
 Scope: replace the PowerShell/WPF UI layer with a FastAPI + pywebview app,
@@ -600,7 +600,7 @@ scope call, not an oversight.
 ## 7. Proposed folder structure
 
 ```
-C:\Apps\PcTuner-Open-Source\
+C:\Apps\PCTuner-Optimization-Tool\
   changes\                                (NEW — sector-organized, replaces both tools' lib\Catalog.ps1, §3)
     Windows Changes\                        — ~21 unique files (deduped across old FPS/Startup catalogs)
       1.1_Telemetry-Minimum.ps1               — one item's Check/Apply/Undo, ~15-30 lines
@@ -725,7 +725,7 @@ for.
 ### Restore point (coarse safety net, on top of the undo log)
 
 Before the first item of an apply run, `Checkpoint-Computer -Description
-"PcTuner-Open-Source pre-apply <timestamp>"`. **Known gotcha**: Windows throttles
+"PCTuner-Optimization-Tool pre-apply <timestamp>"`. **Known gotcha**: Windows throttles
 System Restore to one checkpoint per `SystemRestorePointCreationFrequency`
 (default 1440 min = 24h) — a second apply run same day won't get a fresh
 restore point. Not working around this by touching that registry value
@@ -824,7 +824,7 @@ once-a-day coarse backstop on top of it, not the only line of defense.
   testing would be more ceremony than the surface area justifies.
 - **PowerShell — the one genuinely new piece**: introduce **Pester** to
   unit-test the new `Set-*Tracked`/undo helpers from §8.5 against a
-  **sandboxed registry subtree** (e.g. `HKCU:\Software\PcTuner-Open-Source\_Test\`,
+  **sandboxed registry subtree** (e.g. `HKCU:\Software\PCTuner-Optimization-Tool\_Test\`,
   created fresh and torn down per test run) instead of real system paths.
   This is the only way to actually exercise the apply→undo round-trip
   (write → capture previous value → undo → assert restored) in CI without
@@ -891,7 +891,7 @@ The PS suite already shipped v1.0.0. The Python rewrite is versioned as
 **v2.0.0**, not a reset to v1.0.0 — same product, one coherent release
 history on the GitHub Releases page, even though the old PS app (§0
 decision #3) keeps working standalone indefinitely. Framing: v2.0.0 is
-PcTuner-Open-Source's next major version; the PS app becomes the maintained-but-
+PCTuner-Optimization-Tool's next major version; the PS app becomes the maintained-but-
 not-actively-developed legacy track under that same release history, not a
 separately-versioned sibling product.
 
@@ -938,16 +938,16 @@ release verification.
 PyInstaller can embed `frontend/dist/` inside the onefile exe itself
 (extracted to `_MEIPASS` at runtime), but the `.ps1` catalog engine still
 needs to exist as **real files on disk** next to the exe for `subprocess`
-to invoke (§8). So the release keeps shipping: a bare `PcTuner-Open-Source.exe`
+to invoke (§8). So the release keeps shipping: a bare `PCTuner-Optimization-Tool.exe`
 (same caveat as today — won't actually run standalone without the sibling
-folders) + `PcTuner-Open-Source-v2.0.0-win.zip` containing the exe plus
+folders) + `PCTuner-Optimization-Tool-v2.0.0-win.zip` containing the exe plus
 `FPSOptimization/`, `StartupOptimization/`, `shared/`.
 
 ### CHANGELOG.md — new, doesn't exist today
 Add one repo-root `CHANGELOG.md` narrating the app-level release train
 (`v1.0.0` PS, `v2.0.0` Python, …) with two clearly labeled sections —
-"PcTuner-Open-Source (PowerShell/WPF) — legacy, maintained not actively
-developed" and "PcTuner-Open-Source (Python) — active development" — since the
+"PCTuner-Optimization-Tool (PowerShell/WPF) — legacy, maintained not actively
+developed" and "PCTuner-Optimization-Tool (Python) — active development" — since the
 repo now genuinely ships two parallel artifacts and there's currently
 nowhere that states which one is "current." Per-tool `CHANGES.md` files
 keep doing what they already do (catalog-content history); this is a new,

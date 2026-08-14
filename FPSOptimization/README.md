@@ -1,6 +1,6 @@
 # FPSOptimization
 
-The gaming-FPS tool of the [PcTuner-Open-Source](../README.md) suite. Detects your PC's specs, lists **54 FPS-related changes as checkboxes** (all pre-checked), and lets you uncheck anything before pressing Start. Covers telemetry and background-contention elimination, service debloat, NIC power saving, GPU scheduling, filesystem tuning, and the aggressive security trade-offs (Spectre mitigations, VBS, Defender scheduling).
+The gaming-FPS tool of the [PCTuner-Optimization-Tool](../README.md) suite. Detects your PC's specs, lists **54 FPS-related changes as checkboxes** (all pre-checked), and lets you uncheck anything before pressing Start. Covers telemetry and background-contention elimination, service debloat, NIC power saving, GPU scheduling, filesystem tuning, and the aggressive security trade-offs (Spectre mitigations, VBS, Defender scheduling).
 
 > **Status: scan + apply + undo, all wired into the UI.** No scan runs automatically — press Scan to check current state vs target for every checked item (saves a Markdown + JSON report to `logs\`). Apply fires only after an explicit confirmation modal (creates a System Restore Point first, logs every change for undo); Undo reverts the most recent apply run, whole-run only. This folder holds the catalog (`manifest.json` + `..\changes\`); the UI lives in `..\python\`.
 

@@ -1,6 +1,6 @@
 # StartupOptimization
 
-**Status: scan + apply + undo, all wired into the UI.** The startup-junk tool of the [PcTuner-Open-Source](../README.md) suite, aimed at **everyday PCs, not gaming rigs** — the toned-down cleaner. Same pattern as FPSOptimization: detect, list every removal as a checkbox. No scan runs automatically — press Scan to check current state vs target (saves a report to `logs\`); Apply fires only after an explicit confirmation modal (creates a System Restore Point first, logs every change for undo); Undo reverts the most recent apply run, whole-run only.
+**Status: scan + apply + undo, all wired into the UI.** The startup-junk tool of the [PCTuner-Optimization-Tool](../README.md) suite, aimed at **everyday PCs, not gaming rigs** — the toned-down cleaner. Same pattern as FPSOptimization: detect, list every removal as a checkbox. No scan runs automatically — press Scan to check current state vs target (saves a report to `logs\`); Apply fires only after an explicit confirmation modal (creates a System Restore Point first, logs every change for undo); Undo reverts the most recent apply run, whole-run only.
 
 Launch the suite app — see the root [README](../README.md#start-here-the-app). This folder holds the catalog (`manifest.json` + live discovery via `..\changes\PC Startup\Enumerate.ps1`); the UI lives in `..\python\`.
 
