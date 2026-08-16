@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { api, type ToolKey, type ToolsResponse } from "./api";
+import { AssistantWidget } from "./layout/AssistantWidget";
 import { BackgroundGlows } from "./layout/BackgroundGlows";
 import { HubView } from "./views/HubView";
 import { ToolView } from "./views/ToolView";
@@ -74,6 +75,7 @@ function App() {
           onBack={() => setView({ name: "hub" })}
         />
       )}
+      <AssistantWidget />
     </>
   );
 }
